@@ -54,6 +54,13 @@ function generateBasicSitemap() {
   xml += `</urlset>`;
 
   const outputPath = path.join(__dirname, '../public/sitemap.xml');
+  
+  // Créer le dossier public s'il n'existe pas
+  const publicDir = path.join(__dirname, '../public');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  
   fs.writeFileSync(outputPath, xml, 'utf-8');
   
   console.log(`✅ Sitemap basique généré avec ${staticPages.length} pages statiques`);
@@ -126,6 +133,13 @@ async function generateSitemap() {
 
     // Écrire le fichier
     const outputPath = path.join(__dirname, '../public/sitemap.xml');
+    
+    // Créer le dossier public s'il n'existe pas
+    const publicDir = path.join(__dirname, '../public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    
     fs.writeFileSync(outputPath, xml, 'utf-8');
 
     const totalUrls = staticPages.length + (products?.length || 0);

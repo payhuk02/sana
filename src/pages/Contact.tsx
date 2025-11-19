@@ -61,8 +61,8 @@ const Contact = () => {
           toast.error(firstError.message);
         }
       } else {
-        logger.error('Error submitting contact form', error, 'Contact');
-        toast.error('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+      logger.error('Error submitting contact form', error, 'Contact');
+      toast.error('Erreur lors de l\'envoi du message. Veuillez réessayer.');
       }
     } finally {
       setIsSubmitting(false);

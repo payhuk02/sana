@@ -96,7 +96,7 @@ const Checkout = () => {
           toast.error(firstError.message);
         }
       } else {
-        logger.error('Error creating order', error, 'Checkout');
+      logger.error('Error creating order', error, 'Checkout');
         const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la création de la commande. Veuillez réessayer.';
         toast.error(errorMessage);
       }

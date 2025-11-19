@@ -13,7 +13,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "postbuild": "node scripts/generate-sitemap.js || true"
+    "postbuild": "node scripts/generate-sitemap.js 2>&1 || echo 'Sitemap generation failed, continuing...'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
