@@ -284,14 +284,14 @@ const Categories = () => {
                 />
               </div>
             ) : loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                 {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
             ) : products.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                   {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

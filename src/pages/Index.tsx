@@ -67,17 +67,17 @@ const Index = () => {
         </section>
 
         {/* Features */}
-        <section className="bg-muted/50 py-12">
+        <section className="bg-muted/50 py-8 md:py-12">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {features.map((feature, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-background rounded-lg">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="h-6 w-6 text-primary" />
+                <div key={i} className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 sm:gap-4 p-4 bg-background rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    <h3 className="font-semibold text-sm sm:text-base mb-1">{feature.title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{feature.description}</p>
                   </div>
                 </div>
               ))}
@@ -109,17 +109,17 @@ const Index = () => {
         </section>
 
         {/* Featured Products */}
-        <section className="bg-muted/30 py-16">
+        <section className="bg-muted/30 py-12 md:py-16">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <div className="text-center mb-8 md:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
                 {settings.homepage_sections?.featured?.title || 'Produits Populaires'}
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
                 {settings.homepage_sections?.featured?.description || 'Découvrez nos meilleures ventes'}
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />
@@ -134,16 +134,16 @@ const Index = () => {
         </section>
 
         {/* New Products */}
-        <section className="container mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
               {settings.homepage_sections?.new?.title || 'Nouveautés'}
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
               {settings.homepage_sections?.new?.description || 'Les derniers produits ajoutés'}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
@@ -157,17 +157,17 @@ const Index = () => {
         </section>
 
         {/* Promotions */}
-        <section className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent py-16">
+        <section className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent py-12 md:py-16">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <div className="text-center mb-8 md:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
                 {settings.homepage_sections?.promo?.title || 'Promotions'}
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
                 {settings.homepage_sections?.promo?.description || 'Profitez de nos offres exceptionnelles'}
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />

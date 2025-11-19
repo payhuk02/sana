@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Search, ShoppingCart, User } from 'lucide-react';
+import { Menu, Search, ShoppingCart, User, Home, Grid, Info, Phone as PhoneIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { cn } from '@/lib/utils';
@@ -13,10 +14,10 @@ export const Navbar = React.memo(() => {
   const itemCount = getItemCount();
 
   const navLinks = useMemo(() => [
-    { to: '/', label: 'Accueil' },
-    { to: '/categories', label: 'Catégories' },
-    { to: '/about', label: 'À propos' },
-    { to: '/contact', label: 'Contact' },
+    { to: '/', label: 'Accueil', icon: Home },
+    { to: '/categories', label: 'Catégories', icon: Grid },
+    { to: '/about', label: 'À propos', icon: Info },
+    { to: '/contact', label: 'Contact', icon: PhoneIcon },
   ], []);
 
 
@@ -39,15 +40,15 @@ export const Navbar = React.memo(() => {
               <img 
                 src={settings.logo} 
                 alt={settings.siteName} 
-                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+                className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105"
               />
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
-                <span className="text-primary-foreground font-bold text-xl">{settings.siteName.charAt(0)}</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
+                <span className="text-primary-foreground font-bold text-lg sm:text-xl">{settings.siteName.charAt(0)}</span>
               </div>
             )}
-            <div className="hidden sm:block">
-              <span className="font-bold text-xl text-foreground">{settings.siteName}</span>
+            <div className="block">
+              <span className="font-bold text-lg sm:text-xl text-foreground truncate max-w-[120px] sm:max-w-none block">{settings.siteName}</span>
             </div>
           </Link>
 
@@ -57,19 +58,13 @@ export const Navbar = React.memo(() => {
               <Link
                 key={link.to}
                 to={link.to}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 role="menuitem"
                 onMouseEnter={() => {
-                  // Prefetch la route au hover pour navigation plus rapide
-                  if (link.to === '/') {
-                    import('../pages/Index').catch(() => {});
-                  } else if (link.to === '/categories') {
-                    import('../pages/Categories').catch(() => {});
-                  } else if (link.to === '/about') {
-                    import('../pages/About').catch(() => {});
-                  } else if (link.to === '/contact') {
-                    import('../pages/Contact').catch(() => {});
-                  }
+                  if (link.to === '/') import('../pages/Index').catch(() => {});
+                  else if (link.to === '/categories') import('../pages/Categories').catch(() => {});
+                  else if (link.to === '/about') import('../pages/About').catch(() => {});
+                  else if (link.to === '/contact') import('../pages/Contact').catch(() => {});
                 }}
               >
                 {link.label}
@@ -78,7 +73,7 @@ export const Navbar = React.memo(() => {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -120,56 +115,63 @@ export const Navbar = React.memo(() => {
               </Link>
             </Button>
 
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-              aria-expanded={isOpen}
-              aria-controls="mobile-menu"
-            >
-              {isOpen ? (
-                <X className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <Menu className="h-5 w-5" aria-hidden="true" />
-              )}
-            </Button>
-          </div>
-        </div>
+            {/* Mobile menu (Sheet) */}
+            <div className="md:hidden">
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Menu principal">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px] pr-0">
+                  <SheetHeader className="px-1 text-left">
+                    <SheetTitle className="font-bold text-xl flex items-center gap-2">
+                      {settings.siteName}
+                    </SheetTitle>
+                  </SheetHeader>
+                  
+                  <div className="flex flex-col space-y-4 mt-8 h-full pb-20 overflow-y-auto px-1">
+                    <div className="relative mb-4">
+                       <Link 
+                        to="/categories?search=true" 
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-sm font-medium bg-muted/50 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                      >
+                        <Search className="h-4 w-4 mr-3" />
+                        Rechercher un produit...
+                      </Link>
+                    </div>
 
-        {/* Mobile Navigation */}
-        <div
-          id="mobile-menu"
-          className={cn(
-            'md:hidden overflow-hidden transition-all duration-300',
-            isOpen ? 'max-h-96 pb-4' : 'max-h-0'
-          )}
-          role="menu"
-          aria-hidden={!isOpen}
-        >
-          <div className="flex flex-col space-y-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setIsOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                role="menuitem"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <Link
-              to="/categories?search=true"
-              onClick={() => setIsOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              role="menuitem"
-            >
-              <Search className="h-4 w-4 mr-2" aria-hidden="true" />
-              Rechercher
-            </Link>
+                    <div className="space-y-1">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Menu</h3>
+                      {navLinks.map((link) => (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
+                        >
+                          <link.icon className="h-5 w-5 mr-3 text-muted-foreground" />
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="space-y-1 pt-4 border-t">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Compte</h3>
+                      <Link
+                        to="/account"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                        Mon compte
+                      </Link>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>

@@ -46,77 +46,71 @@ const Cart = () => {
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="bg-card rounded-lg p-4 md:p-6 flex flex-col md:flex-row gap-4 shadow-sm"
+                className="bg-card rounded-lg p-3 sm:p-4 md:p-6 flex gap-3 sm:gap-4 shadow-sm relative"
               >
                 <Link
                   to={`/product/${item.id}`}
-                  className="w-full md:w-32 h-32 bg-muted rounded-lg overflow-hidden flex-shrink-0"
+                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-muted rounded-lg overflow-hidden flex-shrink-0 border border-border/50"
                 >
                   <img
                     src={item.image}
                     alt={item.name}
                     loading="lazy"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Link>
 
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
-                    <Link to={`/product/${item.id}`}>
-                      <p className="text-sm text-muted-foreground">{item.brand}</p>
-                      <h3 className="font-semibold hover:text-primary transition-colors">
-                        {item.name}
-                      </h3>
-                    </Link>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <p className="text-xl font-bold text-primary">
-                      {item.price.toFixed(0)} FCFA
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center border rounded-lg" role="group" aria-label={`Quantité de ${item.name}`}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          aria-label={`Réduire la quantité de ${item.name}`}
-                        >
-                          <Minus className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <span className="w-12 text-center font-medium" aria-label={`Quantité: ${item.quantity}`}>
-                          {item.quantity}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.stock}
-                          aria-label={`Augmenter la quantité de ${item.name}`}
-                          aria-disabled={item.quantity >= item.stock}
-                        >
-                          <Plus className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
-
+                    <div className="flex justify-between items-start pr-8 sm:pr-0">
+                      <Link to={`/product/${item.id}`} className="block truncate pr-2">
+                        <p className="text-xs text-muted-foreground">{item.brand}</p>
+                        <h3 className="font-semibold text-sm sm:text-base hover:text-primary transition-colors truncate">
+                          {item.name}
+                        </h3>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => removeFromCart(item.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive absolute top-2 right-2 sm:relative sm:top-0 sm:right-0 h-8 w-8"
                         aria-label={`Retirer ${item.name} du panier`}
                       >
-                        <Trash2 className="h-5 w-5" aria-hidden="true" />
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                       </Button>
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
-                    Sous-total: {(item.price * item.quantity).toFixed(0)} FCFA
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
+                    <p className="text-base sm:text-xl font-bold text-primary order-1 sm:order-2">
+                      {item.price.toFixed(0)} <span className="text-xs font-normal text-foreground">FCFA</span>
+                    </p>
+
+                    <div className="flex items-center border rounded-md h-8 w-fit order-2 sm:order-1" role="group" aria-label={`Quantité de ${item.name}`}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-none"
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        aria-label="Moins"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-8 sm:w-12 text-center font-medium text-sm">
+                        {item.quantity}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-none"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={item.quantity >= item.stock}
+                        aria-label="Plus"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
