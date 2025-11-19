@@ -447,6 +447,19 @@ export default function SiteSettings() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp (pour contact produits)</Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="+212 6 12 34 56 78"
+                  value={settings.whatsapp}
+                  onChange={(e) => handleChange('whatsapp', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Numéro WhatsApp utilisé pour le bouton "Contacter" sur les cartes produits
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="address">Adresse</Label>
                 <Input
                   id="address"

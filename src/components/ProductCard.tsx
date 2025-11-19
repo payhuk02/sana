@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Eye, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/types/product';
 import { useCart } from '@/contexts/CartContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +13,21 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const { settings } = useSiteSettings();
+
+  // Formater le numéro WhatsApp (enlever espaces et caractères spéciaux sauf +)
+  const formatWhatsAppNumber = (phone: string) => {
+    return phone.replace(/[\s\-\(\)]/g, '');
+  };
+
+  // Créer le lien WhatsApp avec message pré-rempli
+  const getWhatsAppLink = () => {
+    const phone = formatWhatsAppNumber(settings.whatsapp || settings.phone);
+    const message = encodeURIComponent(
+      `Bonjour, je suis intéressé(e) par le produit : ${product.name}`
+    );
+    return `https://wa.me/${phone}?text=${message}`;
+  };
 
   return (
     <Card className="group overflow-hidden hover-lift h-full flex flex-col">
@@ -72,7 +88,31 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 space-y-2">
+        <div className="flex gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="flex-1"
+            size="sm"
+          >
+            <Link to={`/product/${product.id}`}>
+              <Eye className="h-4 w-4 mr-2" />
+              Voir
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            size="sm"
+            onClick={() => {
+              window.open(getWhatsAppLink(), '_blank');
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Contacter
+          </Button>
+        </div>
         <Button
           onClick={() => addToCart(product)}
           disabled={product.stock === 0}

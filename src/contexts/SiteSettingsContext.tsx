@@ -7,6 +7,7 @@ interface SiteSettings {
   slogan: string;
   email: string;
   phone: string;
+  whatsapp: string;
   address: string;
   facebook: string;
   instagram: string;
@@ -29,6 +30,7 @@ const defaultSettings: SiteSettings = {
   slogan: 'Votre boutique de consommables informatiques au meilleur prix',
   email: 'contact@sanadistribution.com',
   phone: '+212 5 22 12 34 56',
+  whatsapp: '+212 5 22 12 34 56',
   address: 'Casablanca, Maroc',
   facebook: 'https://facebook.com/sanadistribution',
   instagram: 'https://instagram.com/sanadistribution',
