@@ -27,27 +27,9 @@ export default defineConfig(({ mode }) => ({
     // Optimisation pour Vercel
     rollupOptions: {
       output: {
-        // Code splitting optimisé et granulaire
+        // Code splitting simplifié pour éviter les erreurs d'ordre de chargement (createContext undefined)
         manualChunks(id) {
-          // Vendor chunks séparés pour meilleur cache
           if (id.includes('node_modules')) {
-            // React core
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            // UI libraries
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'ui-vendor';
-            }
-            // Supabase
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
-            }
-            // React Query
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            // Autres vendors
             return 'vendor';
           }
         },
