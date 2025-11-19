@@ -178,7 +178,7 @@ export default function Dashboard() {
                     color: 'hsl(var(--primary))',
                   },
                 }}
-                className="h-[300px]"
+                className="h-[250px] sm:h-[300px]"
               >
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -231,7 +231,7 @@ export default function Dashboard() {
                   };
                   return acc;
                 }, {} as Record<string, { label: string; color: string }>)}
-                className="h-[300px]"
+                className="h-[250px] sm:h-[300px]"
               >
                 <PieChart>
                   <Pie

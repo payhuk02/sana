@@ -239,7 +239,7 @@ const Checkout = () => {
                       <Label htmlFor="cardNumber">Numéro de carte</Label>
                       <Input id="cardNumber" placeholder="1234 5678 9012 3456" required />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="expiry">Date d'expiration</Label>
                         <Input id="expiry" placeholder="MM/AA" required />

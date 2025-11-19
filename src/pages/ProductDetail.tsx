@@ -161,7 +161,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Features */}
-            <div className="grid grid-cols-2 gap-4 pt-6 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t">
               <div className="flex items-center gap-3">
                 <TruckIcon className="h-5 w-5 text-primary" />
                 <div>

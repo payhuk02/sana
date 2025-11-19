@@ -167,7 +167,7 @@ export default function ProductForm() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Catégorie *</Label>
                     <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
