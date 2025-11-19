@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { CategoryInfo } from '@/types/product';
@@ -24,7 +25,7 @@ const iconMap: Record<string, LucideIcon> = {
   Package,
 };
 
-export const CategoryCard = ({ category }: CategoryCardProps) => {
+export const CategoryCard = React.memo(({ category }: CategoryCardProps) => {
   const Icon = iconMap[category.icon] || Package;
 
   return (
@@ -48,4 +49,6 @@ export const CategoryCard = ({ category }: CategoryCardProps) => {
       </Card>
     </Link>
   );
-};
+});
+
+CategoryCard.displayName = 'CategoryCard';

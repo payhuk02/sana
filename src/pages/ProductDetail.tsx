@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -6,6 +6,8 @@ import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SEO } from '@/components/SEO';
+import { SkipLinks } from '@/components/SkipLinks';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCart } from '@/contexts/CartContext';
 import { Star, ShoppingCart, TruckIcon, ShieldCheck, Plus, Minus } from 'lucide-react';
@@ -16,32 +18,60 @@ import NotFound from './NotFound';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { products, categories } = useProducts();
-  const product = products.find(p => p.id === id);
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
+
+  // Optimisation : useMemo pour éviter les recalculs
+  const product = useMemo(
+    () => products.find(p => p.id === id),
+    [products, id]
+  );
+
+  const similarProducts = useMemo(
+    () => product
+      ? products
+          .filter(p => p.category === product.category && p.id !== product.id)
+          .slice(0, 4)
+      : [],
+    [products, product]
+  );
+
+  const categoryName = useMemo(
+    () => categories.find(c => c.id === product?.category)?.name || 'Produits',
+    [categories, product]
+  );
 
   if (!product) {
     return <NotFound />;
   }
 
-  const similarProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
-
   const handleAddToCart = () => {
     addToCart(product, quantity);
   };
 
+  const productDescription = product.description.length > 160 
+    ? product.description.substring(0, 160) + '...'
+    : product.description;
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title={product.name}
+        description={`${product.name} - ${product.brand}. ${productDescription} Prix: ${product.price}€. ${product.stock > 0 ? 'En stock' : 'Rupture de stock'}.`}
+        keywords={`${product.name}, ${product.brand}, ${product.category}, informatique, consommables`}
+        image={product.image}
+        type="product"
+        url={`${window.location.origin}/product/${product.id}`}
+      />
+      <SkipLinks />
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-8" tabIndex={-1}>
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
             { label: 'Catégories', href: '/categories' },
-            { label: categories.find(c => c.id === product.category)?.name || 'Produits', href: `/categories?category=${product.category}` },
+            { label: categoryName, href: `/categories?category=${product.category}` },
             { label: product.name }
           ]}
         />

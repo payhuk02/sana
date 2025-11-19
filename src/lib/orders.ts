@@ -94,7 +94,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   try {
     const { data: order, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, order_number, customer_email, customer_name, customer_phone, shipping_address, payment_method, payment_status, status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at')
       .eq('id', orderId)
       .single();
 
@@ -146,7 +146,7 @@ export async function getAllOrders(): Promise<Order[]> {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, order_number, customer_email, customer_name, customer_phone, shipping_address, payment_method, payment_status, status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error) {

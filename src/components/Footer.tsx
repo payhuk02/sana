@@ -1,9 +1,12 @@
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
-export const Footer = () => {
+export const Footer = React.memo(() => {
   const { settings } = useSiteSettings();
+  
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
   
   return (
     <footer className="bg-secondary text-secondary-foreground mt-auto">
@@ -111,7 +114,7 @@ export const Footer = () => {
         </div>
 
         <div className="border-t border-secondary-foreground/10 mt-8 pt-8 text-center text-sm text-secondary-foreground/60">
-          <p>&copy; {new Date().getFullYear()} Sana Distribution. Tous droits réservés.</p>
+          <p>&copy; {currentYear} Sana Distribution. Tous droits réservés.</p>
           <div className="mt-2 space-x-4">
             <Link to="/legal" className="hover:text-primary transition-colors">
               Mentions légales
@@ -127,4 +130,6 @@ export const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = 'Footer';

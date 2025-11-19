@@ -6,7 +6,10 @@ import { ProductCard } from '@/components/ProductCard';
 import { FilterSidebar, FilterState } from '@/components/FilterSidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { useProducts } from '@/contexts/ProductsContext';
-import { Category } from '@/types/product';
+import { Category, Product } from '@/types/product';
+import { fetchProductsPaginated, fetchAvailableBrands, ProductFilters, ProductSort } from '@/lib/products';
+import { Loader2 } from 'lucide-react';
+import { ProductCardSkeleton } from '@/components/ProductCardSkeleton';
 import {
   Select,
   SelectContent,
@@ -23,8 +26,8 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 const ITEMS_PER_PAGE = 12;
 
 const Categories = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { products, categories } = useProducts();
+  const [searchParams] = useSearchParams();
+  const { categories } = useProducts();
   const categoryParam = searchParams.get('category') as Category | null;
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -38,69 +41,101 @@ const Categories = () => {
     inStock: false,
   });
 
-  const availableBrands = useMemo(() => {
-    return [...new Set(products.map(p => p.brand))].sort();
-  }, [products]);
+  // État pour les produits paginés
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
 
-  const filteredProducts = useMemo(() => {
-    let result = products;
+  // Récupérer les marques disponibles au chargement
+  useEffect(() => {
+    fetchAvailableBrands().then(setAvailableBrands);
+  }, []);
 
-    // Search (avec debounce)
-    if (debouncedSearchQuery) {
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        p.brand.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-      );
-    }
-
-    // Price range
-    result = result.filter(p =>
-      p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
-    );
-
-    // Brands
-    if (filters.brands.length > 0) {
-      result = result.filter(p => filters.brands.includes(p.brand));
-    }
-
-    // Categories
-    if (filters.categories.length > 0) {
-      result = result.filter(p => filters.categories.includes(p.category));
-    }
-
-    // In stock
-    if (filters.inStock) {
-      result = result.filter(p => p.stock > 0);
-    }
-
-    // Sort
+  // Convertir le tri local en format serveur
+  const getSortConfig = (): ProductSort => {
     switch (sortBy) {
       case 'price-asc':
-        result = result.sort((a, b) => a.price - b.price);
-        break;
+        return { field: 'price', order: 'asc' };
       case 'price-desc':
-        result = result.sort((a, b) => b.price - a.price);
-        break;
+        return { field: 'price', order: 'desc' };
       case 'rating':
-        result = result.sort((a, b) => b.rating - a.rating);
-        break;
+        return { field: 'rating', order: 'desc' };
       case 'newest':
-        result = result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-        break;
+        return { field: 'reviews', order: 'desc', isNew: true };
       default:
-        result = result.sort((a, b) => b.reviews - a.reviews);
+        return { field: 'reviews', order: 'desc' };
+    }
+  };
+
+  // Convertir les filtres locaux en format serveur
+  const getServerFilters = (): ProductFilters => {
+    const serverFilters: ProductFilters = {};
+
+    if (debouncedSearchQuery) {
+      serverFilters.search = debouncedSearchQuery;
     }
 
-    return result;
-  }, [products, debouncedSearchQuery, filters, sortBy]);
+    if (filters.categories.length > 0) {
+      serverFilters.category = filters.categories.length === 1 
+        ? filters.categories[0] 
+        : filters.categories;
+    }
 
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+    if (filters.brands.length > 0) {
+      serverFilters.brands = filters.brands;
+    }
+
+    if (filters.priceRange[0] > 0) {
+      serverFilters.priceMin = filters.priceRange[0];
+    }
+
+    if (filters.priceRange[1] < 5000) {
+      serverFilters.priceMax = filters.priceRange[1];
+    }
+
+    if (filters.minRating > 0) {
+      serverFilters.minRating = filters.minRating;
+    }
+
+    if (filters.inStock) {
+      serverFilters.inStock = true;
+    }
+
+    return serverFilters;
+  };
+
+  // Charger les produits avec pagination côté serveur
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const serverFilters = getServerFilters();
+        const sortConfig = getSortConfig();
+        
+        const result = await fetchProductsPaginated(
+          currentPage,
+          ITEMS_PER_PAGE,
+          serverFilters,
+          sortConfig
+        );
+
+        setProducts(result.products);
+        setTotalProducts(result.total);
+        setTotalPages(result.totalPages);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setProducts([]);
+        setTotalProducts(0);
+        setTotalPages(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [currentPage, debouncedSearchQuery, filters, sortBy]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -148,7 +183,7 @@ const Categories = () => {
                 : 'Tous les produits'}
             </h1>
             <p className="text-muted-foreground">
-              {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}
+              {totalProducts} produit{totalProducts > 1 ? 's' : ''} trouvé{totalProducts > 1 ? 's' : ''}
             </p>
           </div>
 
@@ -191,10 +226,16 @@ const Categories = () => {
 
           {/* Products Grid */}
           <div className="flex-1">
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {paginatedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
@@ -256,7 +297,7 @@ const Categories = () => {
                 )}
 
                 <div className="text-center mt-4 text-sm text-muted-foreground">
-                  Affichage de {paginatedProducts.length} sur {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''}
+                  Affichage de {products.length} sur {totalProducts} produit{totalProducts > 1 ? 's' : ''}
                 </div>
               </>
             ) : (

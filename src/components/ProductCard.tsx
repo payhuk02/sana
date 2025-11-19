@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Eye, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = React.memo(({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
   const { settings } = useSiteSettings();
 
@@ -127,4 +128,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       </CardFooter>
     </Card>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';

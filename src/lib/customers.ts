@@ -26,7 +26,7 @@ export async function getAllCustomers(): Promise<Customer[]> {
     // Récupérer toutes les commandes
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('customer_email, customer_name, customer_phone, shipping_address, total, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -102,7 +102,7 @@ export async function getCustomerOrders(customerEmail: string) {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, order_number, customer_email, customer_name, customer_phone, shipping_address, payment_method, payment_status, status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at')
       .eq('customer_email', customerEmail)
       .order('created_at', { ascending: false });
 

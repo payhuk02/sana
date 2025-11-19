@@ -295,6 +295,292 @@ export default function SiteSettings() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistiques Hero Banner</CardTitle>
+              <CardDescription>Configurez les statistiques affichées dans le Hero Banner</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.homepage_stats || []).map((stat, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor={`stat-value-${index}`}>Valeur {index + 1}</Label>
+                        <Input
+                          id={`stat-value-${index}`}
+                          value={stat.value}
+                          onChange={(e) => {
+                            const newStats = [...(settings.homepage_stats || [])];
+                            newStats[index] = { ...newStats[index], value: e.target.value };
+                            handleChange('homepage_stats', newStats);
+                          }}
+                          placeholder="1000+"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`stat-label-${index}`}>Label {index + 1}</Label>
+                        <Input
+                          id={`stat-label-${index}`}
+                          value={stat.label}
+                          onChange={(e) => {
+                            const newStats = [...(settings.homepage_stats || [])];
+                            newStats[index] = { ...newStats[index], label: e.target.value };
+                            handleChange('homepage_stats', newStats);
+                          }}
+                          placeholder="Produits"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newStats = [...(settings.homepage_stats || [])];
+                        newStats.splice(index, 1);
+                        handleChange('homepage_stats', newStats);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newStats = [...(settings.homepage_stats || []), { value: '', label: '' }];
+                    handleChange('homepage_stats', newStats);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une statistique
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Features (Avantages)</CardTitle>
+              <CardDescription>Configurez les features affichées sur la page d'accueil</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.features_content || []).map((feature, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`feature-icon-${index}`}>Icône {index + 1}</Label>
+                      <Select
+                        value={feature.icon}
+                        onValueChange={(value) => {
+                          const newFeatures = [...(settings.features_content || [])];
+                          newFeatures[index] = { ...newFeatures[index], icon: value };
+                          handleChange('features_content', newFeatures);
+                        }}
+                      >
+                        <SelectTrigger id={`feature-icon-${index}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TruckIcon">Livraison (TruckIcon)</SelectItem>
+                          <SelectItem value="ShieldCheck">Sécurité (ShieldCheck)</SelectItem>
+                          <SelectItem value="HeadphonesIcon">Support (HeadphonesIcon)</SelectItem>
+                          <SelectItem value="Star">Étoile (Star)</SelectItem>
+                          <SelectItem value="Target">Cible (Target)</SelectItem>
+                          <SelectItem value="Users">Utilisateurs (Users)</SelectItem>
+                          <SelectItem value="Award">Récompense (Award)</SelectItem>
+                          <SelectItem value="TrendingUp">Tendance (TrendingUp)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`feature-title-${index}`}>Titre {index + 1}</Label>
+                      <Input
+                        id={`feature-title-${index}`}
+                        value={feature.title}
+                        onChange={(e) => {
+                          const newFeatures = [...(settings.features_content || [])];
+                          newFeatures[index] = { ...newFeatures[index], title: e.target.value };
+                          handleChange('features_content', newFeatures);
+                        }}
+                        placeholder="Livraison rapide"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`feature-desc-${index}`}>Description {index + 1}</Label>
+                      <Input
+                        id={`feature-desc-${index}`}
+                        value={feature.description}
+                        onChange={(e) => {
+                          const newFeatures = [...(settings.features_content || [])];
+                          newFeatures[index] = { ...newFeatures[index], description: e.target.value };
+                          handleChange('features_content', newFeatures);
+                        }}
+                        placeholder="Sous 48h"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newFeatures = [...(settings.features_content || [])];
+                        newFeatures.splice(index, 1);
+                        handleChange('features_content', newFeatures);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newFeatures = [...(settings.features_content || []), { icon: 'Star', title: '', description: '' }];
+                    handleChange('features_content', newFeatures);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une feature
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Titres des Sections</CardTitle>
+              <CardDescription>Configurez les titres et descriptions des sections de la page d'accueil</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {['categories', 'featured', 'new', 'promo', 'testimonials'].map((sectionKey) => (
+                <div key={sectionKey} className="space-y-3 border rounded-lg p-4">
+                  <h4 className="font-semibold capitalize">{sectionKey === 'featured' ? 'Produits Populaires' : sectionKey === 'new' ? 'Nouveautés' : sectionKey === 'promo' ? 'Promotions' : sectionKey === 'testimonials' ? 'Avis Clients' : 'Catégories'}</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor={`section-title-${sectionKey}`}>Titre</Label>
+                    <Input
+                      id={`section-title-${sectionKey}`}
+                      value={settings.homepage_sections?.[sectionKey as keyof typeof settings.homepage_sections]?.title || ''}
+                      onChange={(e) => {
+                        const newSections = {
+                          ...(settings.homepage_sections || {}),
+                          [sectionKey]: {
+                            ...(settings.homepage_sections?.[sectionKey as keyof typeof settings.homepage_sections] || {}),
+                            title: e.target.value,
+                          },
+                        };
+                        handleChange('homepage_sections', newSections);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`section-desc-${sectionKey}`}>Description</Label>
+                    <Input
+                      id={`section-desc-${sectionKey}`}
+                      value={settings.homepage_sections?.[sectionKey as keyof typeof settings.homepage_sections]?.description || ''}
+                      onChange={(e) => {
+                        const newSections = {
+                          ...(settings.homepage_sections || {}),
+                          [sectionKey]: {
+                            ...(settings.homepage_sections?.[sectionKey as keyof typeof settings.homepage_sections] || {}),
+                            description: e.target.value,
+                          },
+                        };
+                        handleChange('homepage_sections', newSections);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Témoignages Clients</CardTitle>
+              <CardDescription>Gérez les témoignages affichés sur la page d'accueil</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.testimonials_content || []).map((testimonial, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`testimonial-name-${index}`}>Nom {index + 1}</Label>
+                      <Input
+                        id={`testimonial-name-${index}`}
+                        value={testimonial.name}
+                        onChange={(e) => {
+                          const newTestimonials = [...(settings.testimonials_content || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], name: e.target.value };
+                          handleChange('testimonials_content', newTestimonials);
+                        }}
+                        placeholder="Sophie Martin"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`testimonial-text-${index}`}>Texte {index + 1}</Label>
+                      <Textarea
+                        id={`testimonial-text-${index}`}
+                        value={testimonial.text}
+                        onChange={(e) => {
+                          const newTestimonials = [...(settings.testimonials_content || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], text: e.target.value };
+                          handleChange('testimonials_content', newTestimonials);
+                        }}
+                        rows={3}
+                        placeholder="Excellent service et produits de qualité..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`testimonial-rating-${index}`}>Note {index + 1} (1-5)</Label>
+                      <Input
+                        id={`testimonial-rating-${index}`}
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={testimonial.rating}
+                        onChange={(e) => {
+                          const newTestimonials = [...(settings.testimonials_content || [])];
+                          newTestimonials[index] = { ...newTestimonials[index], rating: parseInt(e.target.value) || 5 };
+                          handleChange('testimonials_content', newTestimonials);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newTestimonials = [...(settings.testimonials_content || [])];
+                        newTestimonials.splice(index, 1);
+                        handleChange('testimonials_content', newTestimonials);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newTestimonials = [...(settings.testimonials_content || []), { name: '', text: '', rating: 5 }];
+                    handleChange('testimonials_content', newTestimonials);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter un témoignage
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="design" className="space-y-6">
@@ -533,6 +819,214 @@ export default function SiteSettings() {
                   value={settings.aboutText}
                   onChange={(e) => handleChange('aboutText', e.target.value)}
                   rows={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="about_hero_description">Description Hero</Label>
+                <Input
+                  id="about_hero_description"
+                  value={settings.about_hero_description || ''}
+                  onChange={(e) => handleChange('about_hero_description', e.target.value)}
+                  placeholder="Votre partenaire de confiance..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Description affichée dans le hero de la page À propos
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Valeurs de l'entreprise</CardTitle>
+              <CardDescription>Configurez les valeurs affichées sur la page À propos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.about_values || []).map((value, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`value-icon-${index}`}>Icône {index + 1}</Label>
+                      <Select
+                        value={value.icon}
+                        onValueChange={(iconValue) => {
+                          const newValues = [...(settings.about_values || [])];
+                          newValues[index] = { ...newValues[index], icon: iconValue };
+                          handleChange('about_values', newValues);
+                        }}
+                      >
+                        <SelectTrigger id={`value-icon-${index}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Target">Cible (Target)</SelectItem>
+                          <SelectItem value="Users">Utilisateurs (Users)</SelectItem>
+                          <SelectItem value="Award">Récompense (Award)</SelectItem>
+                          <SelectItem value="TrendingUp">Tendance (TrendingUp)</SelectItem>
+                          <SelectItem value="TruckIcon">Livraison (TruckIcon)</SelectItem>
+                          <SelectItem value="ShieldCheck">Sécurité (ShieldCheck)</SelectItem>
+                          <SelectItem value="HeadphonesIcon">Support (HeadphonesIcon)</SelectItem>
+                          <SelectItem value="Star">Étoile (Star)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`value-title-${index}`}>Titre {index + 1}</Label>
+                      <Input
+                        id={`value-title-${index}`}
+                        value={value.title}
+                        onChange={(e) => {
+                          const newValues = [...(settings.about_values || [])];
+                          newValues[index] = { ...newValues[index], title: e.target.value };
+                          handleChange('about_values', newValues);
+                        }}
+                        placeholder="Excellence"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`value-desc-${index}`}>Description {index + 1}</Label>
+                      <Textarea
+                        id={`value-desc-${index}`}
+                        value={value.description}
+                        onChange={(e) => {
+                          const newValues = [...(settings.about_values || [])];
+                          newValues[index] = { ...newValues[index], description: e.target.value };
+                          handleChange('about_values', newValues);
+                        }}
+                        rows={2}
+                        placeholder="Nous sélectionnons uniquement les meilleurs produits..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newValues = [...(settings.about_values || [])];
+                        newValues.splice(index, 1);
+                        handleChange('about_values', newValues);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newValues = [...(settings.about_values || []), { icon: 'Target', title: '', description: '' }];
+                    handleChange('about_values', newValues);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une valeur
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistiques</CardTitle>
+              <CardDescription>Configurez les statistiques affichées sur la page À propos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.about_stats || []).map((stat, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor={`about-stat-value-${index}`}>Valeur {index + 1}</Label>
+                        <Input
+                          id={`about-stat-value-${index}`}
+                          value={stat.value}
+                          onChange={(e) => {
+                            const newStats = [...(settings.about_stats || [])];
+                            newStats[index] = { ...newStats[index], value: e.target.value };
+                            handleChange('about_stats', newStats);
+                          }}
+                          placeholder="10K+"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`about-stat-label-${index}`}>Label {index + 1}</Label>
+                        <Input
+                          id={`about-stat-label-${index}`}
+                          value={stat.label}
+                          onChange={(e) => {
+                            const newStats = [...(settings.about_stats || [])];
+                            newStats[index] = { ...newStats[index], label: e.target.value };
+                            handleChange('about_stats', newStats);
+                          }}
+                          placeholder="Clients satisfaits"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newStats = [...(settings.about_stats || [])];
+                        newStats.splice(index, 1);
+                        handleChange('about_stats', newStats);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newStats = [...(settings.about_stats || []), { value: '', label: '' }];
+                    handleChange('about_stats', newStats);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une statistique
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Texte Équipe</CardTitle>
+              <CardDescription>Texte de présentation de l'équipe</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="about_team_text">Texte de l'équipe</Label>
+                <Textarea
+                  id="about_team_text"
+                  value={settings.about_team_text || ''}
+                  onChange={(e) => handleChange('about_team_text', e.target.value)}
+                  rows={4}
+                  placeholder="Notre équipe de professionnels..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Texte d'Engagement</CardTitle>
+              <CardDescription>Texte d'engagement de l'entreprise</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="about_commitment_text">Texte d'engagement</Label>
+                <Textarea
+                  id="about_commitment_text"
+                  value={settings.about_commitment_text || ''}
+                  onChange={(e) => handleChange('about_commitment_text', e.target.value)}
+                  rows={4}
+                  placeholder="Chez Sana Distribution, nous nous engageons..."
                 />
               </div>
             </CardContent>

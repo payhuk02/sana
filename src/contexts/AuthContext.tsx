@@ -44,16 +44,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true; // Flag pour éviter les mises à jour après unmount
+    let timeoutId: NodeJS.Timeout | null = null;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Nettoyer le timeout précédent si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
         // Defer admin check to avoid blocking
         if (session?.user) {
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
+          timeoutId = setTimeout(() => {
+            if (isMounted) {
+              checkAdminStatus(session.user.id);
+            }
           }, 0);
         } else {
           setIsAdmin(false);
@@ -65,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -72,9 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkAdminStatus(session.user.id);
       }
       setLoading(false);
+    }).catch((error) => {
+      if (isMounted) {
+        logger.error('Error getting session', error, 'AuthContext');
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false; // Marquer comme unmounted
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {

@@ -1,9 +1,10 @@
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
-export const HeroBanner = () => {
+export const HeroBanner = memo(() => {
   const { settings } = useSiteSettings();
   
   return (
@@ -45,22 +46,20 @@ export const HeroBanner = () => {
               <Link to="/about">En savoir plus</Link>
             </Button>
           </div>
-          <div className="flex items-center gap-4 sm:gap-6 md:gap-8 text-primary-foreground/90">
-            <div>
-              <div className="text-xl sm:text-2xl font-bold">1000+</div>
-              <div className="text-xs sm:text-sm">Produits</div>
+          {settings.homepage_stats && settings.homepage_stats.length > 0 && (
+            <div className="flex items-center gap-4 sm:gap-6 md:gap-8 text-primary-foreground/90">
+              {settings.homepage_stats.map((stat, i) => (
+                <div key={i}>
+                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                  <div className="text-xs sm:text-sm">{stat.label}</div>
+                </div>
+              ))}
             </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-bold">50+</div>
-              <div className="text-xs sm:text-sm">Marques</div>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-bold">10k+</div>
-              <div className="text-xs sm:text-sm">Clients satisfaits</div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
-};
+});
+
+HeroBanner.displayName = 'HeroBanner';

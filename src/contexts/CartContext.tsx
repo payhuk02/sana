@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { CartItem, Product } from '@/types/product';
 import { toast } from 'sonner';
 import { useProducts } from './ProductsContext';
+import { logger } from '@/lib/logger';
 
 interface CartContextType {
   cart: CartItem[];
@@ -18,34 +19,48 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const { products } = useProducts();
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('sana-cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('sana-cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      logger.error('Error reading cart from localStorage', error, 'CartContext');
+      return [];
+    }
   });
 
+  // Debounce localStorage writes pour éviter les écritures excessives
   useEffect(() => {
-    localStorage.setItem('sana-cart', JSON.stringify(cart));
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem('sana-cart', JSON.stringify(cart));
+      } catch (error) {
+        logger.error('Error saving cart to localStorage', error, 'CartContext');
+      }
+    }, 300); // Debounce de 300ms
+
+    return () => clearTimeout(timeoutId);
   }, [cart]);
 
   const addToCart = useCallback((product: Product, quantity: number = 1) => {
-    // Vérifier le stock disponible
-    const currentProduct = products.find(p => p.id === product.id);
-    if (!currentProduct) {
-      toast.error('Produit introuvable');
-      return;
-    }
-
-    const currentCartItem = cart.find(item => item.id === product.id);
-    const currentQuantity = currentCartItem?.quantity || 0;
-    const requestedQuantity = currentQuantity + quantity;
-
-    if (requestedQuantity > currentProduct.stock) {
-      toast.error(
-        `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
-      );
-      return;
-    }
-
     setCart(prev => {
+      // Vérifier le stock disponible
+      const currentProduct = products.find(p => p.id === product.id);
+      if (!currentProduct) {
+        toast.error('Produit introuvable');
+        return prev;
+      }
+
+      const currentCartItem = prev.find(item => item.id === product.id);
+      const currentQuantity = currentCartItem?.quantity || 0;
+      const requestedQuantity = currentQuantity + quantity;
+
+      if (requestedQuantity > currentProduct.stock) {
+        toast.error(
+          `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
+        );
+        return prev;
+      }
+
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
         toast.success('Quantité mise à jour');
@@ -58,7 +73,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Produit ajouté au panier');
       return [...prev, { ...product, quantity }];
     });
-  }, [products, cart]);
+  }, [products]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart(prev => prev.filter(item => item.id !== productId));
@@ -71,26 +86,27 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Vérifier le stock disponible
-    const currentProduct = products.find(p => p.id === productId);
-    if (!currentProduct) {
-      toast.error('Produit introuvable');
-      return;
-    }
+    setCart(prev => {
+      // Vérifier le stock disponible
+      const currentProduct = products.find(p => p.id === productId);
+      if (!currentProduct) {
+        toast.error('Produit introuvable');
+        return prev;
+      }
 
-    if (quantity > currentProduct.stock) {
-      toast.error(
-        `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
+      let finalQuantity = quantity;
+      if (quantity > currentProduct.stock) {
+        toast.error(
+          `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
+        );
+        // Ajuster à la quantité maximale disponible
+        finalQuantity = currentProduct.stock;
+      }
+
+      return prev.map(item =>
+        item.id === productId ? { ...item, quantity: finalQuantity } : item
       );
-      // Ajuster à la quantité maximale disponible
-      quantity = currentProduct.stock;
-    }
-
-    setCart(prev =>
-      prev.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+    });
   }, [products, removeFromCart]);
 
   const clearCart = useCallback(() => {
@@ -106,15 +122,27 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
-  const value = useMemo(() => ({
+  // Séparer les valeurs pour éviter les re-renders inutiles
+  // Les données (cart) changent plus souvent que les fonctions
+  const dataValue = useMemo(() => ({
     cart,
+  }), [cart]);
+
+  // Les fonctions sont stables grâce à useCallback
+  const actionsValue = useMemo(() => ({
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     getTotal,
     getItemCount,
-  }), [cart, addToCart, removeFromCart, updateQuantity, clearCart, getTotal, getItemCount]);
+  }), [addToCart, removeFromCart, updateQuantity, clearCart, getTotal, getItemCount]);
+
+  // Combiner les valeurs
+  const value = useMemo(() => ({
+    ...dataValue,
+    ...actionsValue,
+  }), [dataValue, actionsValue]);
 
   return (
     <CartContext.Provider value={value}>

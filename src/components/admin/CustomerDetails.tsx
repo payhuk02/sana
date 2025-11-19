@@ -38,7 +38,8 @@ export function CustomerDetails({ customer, open, onOpenChange }: CustomerDetail
           setOrders(formattedOrders);
         })
         .catch((error) => {
-          console.error('Error fetching customer orders', error);
+          // Error will be handled by the UI (empty orders list)
+          // In production, consider using a logger service
         })
         .finally(() => {
           setLoading(false);
