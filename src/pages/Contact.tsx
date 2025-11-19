@@ -111,10 +111,8 @@ const Contact = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Horaires</h3>
-                      <p className="text-muted-foreground">
-                        Lundi - Vendredi: 9h - 18h<br />
-                        Samedi: 10h - 16h<br />
-                        Dimanche: Fermé
+                      <p className="text-muted-foreground whitespace-pre-line">
+                        {settings.opening_hours || 'Lundi - Vendredi: 9h - 18h\nSamedi: 10h - 16h\nDimanche: Fermé'}
                       </p>
                     </div>
                   </div>
@@ -232,29 +230,20 @@ const Contact = () => {
               </p>
             </div>
             <div className="max-w-3xl mx-auto space-y-6">
-              {[
-                {
-                  q: 'Quels sont les délais de livraison ?',
-                  a: 'Nous livrons sous 48h pour la France métropolitaine. Les commandes passées avant 14h sont expédiées le jour même.',
-                },
-                {
-                  q: 'Puis-je retourner un produit ?',
-                  a: 'Oui, vous disposez de 30 jours pour retourner un produit non ouvert. Les frais de retour sont gratuits.',
-                },
-                {
-                  q: 'Les produits sont-ils garantis ?',
-                  a: 'Tous nos produits bénéficient de la garantie constructeur (généralement 2 ans) et sont 100% authentiques.',
-                },
-                {
-                  q: 'Comment suivre ma commande ?',
-                  a: 'Vous recevrez un email avec un numéro de suivi dès l\'expédition de votre commande.',
-                },
-              ].map((faq, i) => (
-                <div key={i} className="bg-card p-6 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
-                  <p className="text-muted-foreground">{faq.a}</p>
+              {settings.faq_content && settings.faq_content.length > 0 ? (
+                settings.faq_content.map((faq, i) => (
+                  <div key={i} className="bg-card p-6 rounded-lg">
+                    <h3 className="font-semibold text-lg mb-2">{faq.question}</h3>
+                    <p className="text-muted-foreground">{faq.answer}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    Aucune question fréquente n'a été configurée pour le moment.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </section>

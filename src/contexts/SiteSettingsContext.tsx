@@ -23,6 +23,11 @@ interface SiteSettings {
   foreground_color: string;
   primary_font: string;
   heading_font: string;
+  privacy_policy: string;
+  legal_notices: string;
+  terms_of_sale: string;
+  opening_hours: string;
+  faq_content: Array<{ question: string; answer: string }>;
 }
 
 const defaultSettings: SiteSettings = {
@@ -46,6 +51,11 @@ const defaultSettings: SiteSettings = {
   foreground_color: '224 71.4% 4.1%',
   primary_font: 'Inter',
   heading_font: 'Inter',
+  privacy_policy: '',
+  legal_notices: '',
+  terms_of_sale: '',
+  opening_hours: 'Lundi - Vendredi: 9h - 18h\nSamedi: 10h - 16h\nDimanche: Fermé',
+  faq_content: [],
 };
 
 interface SiteSettingsContextType {
@@ -120,7 +130,16 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
           .single();
 
         if (data && !error) {
-          setSettings(data);
+          // Ensure faq_content is an array (handle JSONB from database)
+          const processedData = {
+            ...data,
+            faq_content: Array.isArray(data.faq_content) 
+              ? data.faq_content 
+              : (typeof data.faq_content === 'string' 
+                  ? JSON.parse(data.faq_content || '[]') 
+                  : []),
+          };
+          setSettings(processedData);
         } else {
           // Initialize with default settings if not found
           await supabase.from('site_settings').insert([defaultSettings]);
@@ -149,7 +168,16 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
         // Récupérer les données complètes après un changement
         supabase.from('site_settings').select('*').single().then(({ data, error }) => {
           if (data && !error) {
-            setSettings(data);
+            // Ensure faq_content is an array (handle JSONB from database)
+            const processedData = {
+              ...data,
+              faq_content: Array.isArray(data.faq_content) 
+                ? data.faq_content 
+                : (typeof data.faq_content === 'string' 
+                    ? JSON.parse(data.faq_content || '[]') 
+                    : []),
+            };
+            setSettings(processedData);
             logger.info('Site settings updated via Realtime', 'SiteSettingsContext');
           }
         });

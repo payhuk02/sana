@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
-import { Upload, X, Palette } from 'lucide-react';
+import { Upload, X, Palette, Plus, Minus } from 'lucide-react';
 import { ColorPicker } from '@/components/admin/ColorPicker';
 import { logger } from '@/lib/logger';
 
@@ -35,9 +35,15 @@ export default function SiteSettings() {
     'Source Sans Pro', 'Ubuntu', 'Oswald', 'Work Sans'
   ];
 
-  const handleChange = async (field: string, value: string) => {
+  const handleChange = async (field: string, value: string | Array<{ question: string; answer: string }>) => {
     try {
-      await updateSettings({ [field]: value });
+      // Handle faq_content specially - it can be a JSON string or array
+      if (field === 'faq_content') {
+        const faqValue = typeof value === 'string' ? JSON.parse(value) : value;
+        await updateSettings({ [field]: faqValue });
+      } else {
+        await updateSettings({ [field]: value });
+      }
     } catch (error) {
       logger.error(`Error updating ${field}`, error, 'SiteSettings');
       toast.error(`Erreur lors de la mise à jour de ${field}`);
@@ -170,12 +176,13 @@ export default function SiteSettings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
           <TabsTrigger value="general" className="text-xs sm:text-sm">Général</TabsTrigger>
           <TabsTrigger value="homepage" className="text-xs sm:text-sm">Accueil</TabsTrigger>
           <TabsTrigger value="design" className="text-xs sm:text-sm">Design</TabsTrigger>
           <TabsTrigger value="contact" className="text-xs sm:text-sm">Contact</TabsTrigger>
           <TabsTrigger value="about" className="text-xs sm:text-sm">À propos</TabsTrigger>
+          <TabsTrigger value="legal" className="text-xs sm:text-sm">Légal</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -527,6 +534,162 @@ export default function SiteSettings() {
                   onChange={(e) => handleChange('aboutText', e.target.value)}
                   rows={6}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="legal" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Politique de confidentialité</CardTitle>
+              <CardDescription>Gérez le contenu de votre politique de confidentialité</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="privacy_policy">Contenu de la politique de confidentialité</Label>
+                <Textarea
+                  id="privacy_policy"
+                  value={settings.privacy_policy}
+                  onChange={(e) => handleChange('privacy_policy', e.target.value)}
+                  rows={12}
+                  placeholder="Entrez le contenu de votre politique de confidentialité..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ce contenu sera affiché sur la page /privacy
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Mentions légales</CardTitle>
+              <CardDescription>Gérez le contenu de vos mentions légales</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="legal_notices">Contenu des mentions légales</Label>
+                <Textarea
+                  id="legal_notices"
+                  value={settings.legal_notices}
+                  onChange={(e) => handleChange('legal_notices', e.target.value)}
+                  rows={12}
+                  placeholder="Entrez le contenu de vos mentions légales..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ce contenu sera affiché sur la page /legal
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Conditions Générales de Vente (CGV)</CardTitle>
+              <CardDescription>Gérez le contenu de vos CGV</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="terms_of_sale">Contenu des CGV</Label>
+                <Textarea
+                  id="terms_of_sale"
+                  value={settings.terms_of_sale}
+                  onChange={(e) => handleChange('terms_of_sale', e.target.value)}
+                  rows={12}
+                  placeholder="Entrez le contenu de vos conditions générales de vente..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ce contenu sera affiché sur la page /terms
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Horaires d'ouverture</CardTitle>
+              <CardDescription>Configurez les horaires affichés sur la page contact</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="opening_hours">Horaires d'ouverture</Label>
+                <Textarea
+                  id="opening_hours"
+                  value={settings.opening_hours}
+                  onChange={(e) => handleChange('opening_hours', e.target.value)}
+                  rows={4}
+                  placeholder="Lundi - Vendredi: 9h - 18h&#10;Samedi: 10h - 16h&#10;Dimanche: Fermé"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Utilisez des retours à la ligne pour séparer les jours. Ce contenu sera affiché sur la page contact.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Questions Fréquentes (FAQ)</CardTitle>
+              <CardDescription>Gérez les questions fréquentes affichées sur la page contact</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {(settings.faq_content || []).map((faq, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`faq-q-${index}`}>Question {index + 1}</Label>
+                      <Input
+                        id={`faq-q-${index}`}
+                        value={faq.question}
+                        onChange={(e) => {
+                          const newFaq = [...(settings.faq_content || [])];
+                          newFaq[index] = { ...newFaq[index], question: e.target.value };
+                          handleChange('faq_content', newFaq);
+                        }}
+                        placeholder="Quelle est votre question ?"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`faq-a-${index}`}>Réponse {index + 1}</Label>
+                      <Textarea
+                        id={`faq-a-${index}`}
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const newFaq = [...(settings.faq_content || [])];
+                          newFaq[index] = { ...newFaq[index], answer: e.target.value };
+                          handleChange('faq_content', newFaq);
+                        }}
+                        rows={3}
+                        placeholder="Entrez la réponse..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newFaq = [...(settings.faq_content || [])];
+                        newFaq.splice(index, 1);
+                        handleChange('faq_content', newFaq);
+                      }}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newFaq = [...(settings.faq_content || []), { question: '', answer: '' }];
+                    handleChange('faq_content', newFaq);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une question
+                </Button>
               </div>
             </CardContent>
           </Card>

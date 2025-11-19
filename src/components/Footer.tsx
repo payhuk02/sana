@@ -113,15 +113,15 @@ export const Footer = () => {
         <div className="border-t border-secondary-foreground/10 mt-8 pt-8 text-center text-sm text-secondary-foreground/60">
           <p>&copy; {new Date().getFullYear()} Sana Distribution. Tous droits réservés.</p>
           <div className="mt-2 space-x-4">
-            <a href="#" className="hover:text-primary transition-colors">
+            <Link to="/legal" className="hover:text-primary transition-colors">
               Mentions légales
-            </a>
-            <a href="#" className="hover:text-primary transition-colors">
+            </Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">
               Politique de confidentialité
-            </a>
-            <a href="#" className="hover:text-primary transition-colors">
+            </Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">
               CGV
-            </a>
+            </Link>
           </div>
         </div>
       </div>
