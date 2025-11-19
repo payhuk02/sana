@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 interface SiteSettings {
   siteName: string;
@@ -124,7 +125,7 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
           setSettings(defaultSettings);
         }
       } catch (error) {
-        console.error('Error fetching settings:', error);
+        logger.error('Error fetching site settings', error, 'SiteSettingsContext');
         setSettings(defaultSettings);
       } finally {
         setLoading(false);
@@ -161,14 +162,14 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
         .limit(1);
       
       if (error) {
-        console.error('Error updating settings:', error);
+        logger.error('Error updating site settings in database', error, 'SiteSettingsContext');
         throw error;
       }
       
       // Update local state immediately for instant UI feedback
       setSettings(updated);
     } catch (error) {
-      console.error('Failed to update settings:', error);
+      logger.error('Failed to update site settings', error, 'SiteSettingsContext');
       throw error;
     }
   };

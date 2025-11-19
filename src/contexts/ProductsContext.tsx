@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CategoryInfo } from '@/types/product';
 import { products as initialProducts, categories as initialCategories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 interface ProductsContextType {
   products: Product[];
@@ -46,7 +47,7 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
           if (!error) setCategories(initialCategories);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        logger.error('Error fetching products and categories', error, 'ProductsContext');
         // Fallback to initial data on error
         setProducts(initialProducts);
         setCategories(initialCategories);
@@ -88,12 +89,12 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('products').insert([product]);
       if (error) {
-        console.error('Error adding product:', error);
+        logger.error('Error adding product to database', error, 'ProductsContext');
         throw error;
       }
       setProducts(prev => [...prev, product]);
     } catch (error) {
-      console.error('Failed to add product:', error);
+      logger.error('Failed to add product', error, 'ProductsContext');
       throw error;
     }
   };
@@ -102,14 +103,14 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('products').update(updatedProduct).eq('id', id);
       if (error) {
-        console.error('Error updating product:', error);
+        logger.error('Error updating product in database', error, 'ProductsContext');
         throw error;
       }
       setProducts(prev =>
         prev.map(p => (p.id === id ? { ...p, ...updatedProduct } : p))
       );
     } catch (error) {
-      console.error('Failed to update product:', error);
+      logger.error('Failed to update product', error, 'ProductsContext');
       throw error;
     }
   };
@@ -118,12 +119,12 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) {
-        console.error('Error deleting product:', error);
+        logger.error('Error deleting product from database', error, 'ProductsContext');
         throw error;
       }
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (error) {
-      console.error('Failed to delete product:', error);
+      logger.error('Failed to delete product', error, 'ProductsContext');
       throw error;
     }
   };
@@ -132,12 +133,12 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('categories').insert([category]);
       if (error) {
-        console.error('Error adding category:', error);
+        logger.error('Error adding category to database', error, 'ProductsContext');
         throw error;
       }
       setCategories(prev => [...prev, category]);
     } catch (error) {
-      console.error('Failed to add category:', error);
+      logger.error('Failed to add category', error, 'ProductsContext');
       throw error;
     }
   };
@@ -146,14 +147,14 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('categories').update(updatedCategory).eq('id', id);
       if (error) {
-        console.error('Error updating category:', error);
+        logger.error('Error updating category in database', error, 'ProductsContext');
         throw error;
       }
       setCategories(prev =>
         prev.map(c => (c.id === id ? { ...c, ...updatedCategory } : c))
       );
     } catch (error) {
-      console.error('Failed to update category:', error);
+      logger.error('Failed to update category', error, 'ProductsContext');
       throw error;
     }
   };
@@ -162,12 +163,12 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) {
-        console.error('Error deleting category:', error);
+        logger.error('Error deleting category from database', error, 'ProductsContext');
         throw error;
       }
       setCategories(prev => prev.filter(c => c.id !== id));
     } catch (error) {
-      console.error('Failed to delete category:', error);
+      logger.error('Failed to delete category', error, 'ProductsContext');
       throw error;
     }
   };

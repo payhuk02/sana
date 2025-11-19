@@ -8,6 +8,7 @@ import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import ProductDetail from "./pages/ProductDetail";
@@ -29,47 +30,49 @@ import AdminSettings from "./pages/admin/AdminSettings";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <SiteSettingsProvider>
-            <ProductsProvider>
-              <CartProvider>
-                <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="products" element={<Products />} />
-                <Route path="products/add" element={<ProductForm />} />
-                <Route path="products/edit/:id" element={<ProductForm />} />
-                <Route path="categories" element={<AdminCategories />} />
-                <Route path="orders" element={<Orders />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="site-settings" element={<SiteSettings />} />
-                <Route path="admin-settings" element={<AdminSettings />} />
-              </Route>
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-                </Routes>
-              </CartProvider>
-            </ProductsProvider>
-          </SiteSettingsProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <SiteSettingsProvider>
+              <ProductsProvider>
+                <CartProvider>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="products" element={<Products />} />
+                      <Route path="products/add" element={<ProductForm />} />
+                      <Route path="products/edit/:id" element={<ProductForm />} />
+                      <Route path="categories" element={<AdminCategories />} />
+                      <Route path="orders" element={<Orders />} />
+                      <Route path="customers" element={<Customers />} />
+                      <Route path="site-settings" element={<SiteSettings />} />
+                      <Route path="admin-settings" element={<AdminSettings />} />
+                    </Route>
+                    
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </CartProvider>
+              </ProductsProvider>
+            </SiteSettingsProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

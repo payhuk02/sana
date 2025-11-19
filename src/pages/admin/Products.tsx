@@ -5,21 +5,46 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { toast } from 'sonner';
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
   const { products, deleteProduct } = useProducts();
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
-    toast.success('Produit supprimé avec succès');
+  const handleDeleteClick = (id: string, name: string) => {
+    setProductToDelete({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+
+    try {
+      await deleteProduct(productToDelete.id);
+      toast.success('Produit supprimé avec succès');
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors de la suppression du produit');
+    }
   };
 
   return (
@@ -94,7 +119,7 @@ export default function Products() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDeleteClick(product.id, product.name)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -108,6 +133,29 @@ export default function Products() {
           </div>
         </div>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer le produit <strong>{productToDelete?.name}</strong> ?
+              Cette action est irréversible et le produit sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProductToDelete(null)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

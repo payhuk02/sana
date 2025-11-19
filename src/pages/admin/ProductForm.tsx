@@ -12,6 +12,7 @@ import { useProducts } from '@/contexts/ProductsContext';
 import { supabase } from '@/lib/supabase';
 import { productSchema } from '@/lib/validations';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -108,7 +109,7 @@ export default function ProductForm() {
           toast.error(`${err.path.join('.')}: ${err.message}`);
         });
       } else {
-        console.error('Error:', error);
+        logger.error('Error saving product', error, 'ProductForm');
         toast.error('Erreur lors de l\'enregistrement du produit');
       }
     } finally {

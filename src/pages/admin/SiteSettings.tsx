@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { Upload, X, Palette } from 'lucide-react';
 import { ColorPicker } from '@/components/admin/ColorPicker';
+import { logger } from '@/lib/logger';
 
 export default function SiteSettings() {
   const { settings, updateSettings } = useSiteSettings();
@@ -71,7 +72,7 @@ export default function SiteSettings() {
       setBannerPreview(publicUrl);
       toast.success('Image uploadée avec succès');
     } catch (error) {
-      console.error('Error uploading banner:', error);
+      logger.error('Error uploading banner image', error, 'SiteSettings');
       toast.error('Erreur lors de l\'upload de l\'image');
     } finally {
       setUploading(false);
@@ -121,7 +122,7 @@ export default function SiteSettings() {
       setLogoPreview(publicUrl);
       toast.success('Logo uploadé avec succès');
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      logger.error('Error uploading logo image', error, 'SiteSettings');
       toast.error('Erreur lors de l\'upload du logo');
     } finally {
       setUploading(false);

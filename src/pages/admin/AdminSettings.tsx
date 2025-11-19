@@ -4,22 +4,84 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { authSchema } from '@/lib/validations';
+import { z } from 'zod';
+import { logger } from '@/lib/logger';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminSettings() {
+  const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
     if (newPassword !== confirmPassword) {
       toast.error('Les mots de passe ne correspondent pas');
       return;
     }
-    toast.success('Mot de passe modifié avec succès');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+
+    try {
+      // Valider le format du nouveau mot de passe
+      authSchema.pick({ password: true }).parse({ password: newPassword });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.issues.forEach((err) => {
+          toast.error(err.message);
+        });
+        return;
+      }
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      // Vérifier le mot de passe actuel en essayant de se reconnecter
+      if (!user?.email) {
+        toast.error('Email utilisateur introuvable');
+        return;
+      }
+
+      // Vérifier le mot de passe actuel
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        toast.error('Mot de passe actuel incorrect');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Mettre à jour le mot de passe
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        logger.error('Error updating password', updateError, 'AdminSettings');
+        toast.error('Erreur lors de la mise à jour du mot de passe');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      toast.success('Mot de passe modifié avec succès');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      logger.error('Error changing password', error, 'AdminSettings');
+      toast.error('Erreur lors du changement de mot de passe');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   return (
@@ -67,7 +129,20 @@ export default function AdminSettings() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full sm:w-auto">Modifier le mot de passe</Button>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={isChangingPassword}
+              >
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Modification...
+                  </>
+                ) : (
+                  'Modifier le mot de passe'
+                )}
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -80,11 +155,15 @@ export default function AdminSettings() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input value="contact@edigit-agence.com" disabled />
+              <Input value={user?.email || 'Non disponible'} disabled />
             </div>
             <div className="space-y-2">
               <Label>Rôle</Label>
-              <Input value="Super Administrateur" disabled />
+              <Input value="Administrateur" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label>ID Utilisateur</Label>
+              <Input value={user?.id || 'Non disponible'} disabled className="font-mono text-xs" />
             </div>
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAdmin(false);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      logger.error('Error checking admin status', error, 'AuthContext');
       setIsAdmin(false);
     }
   };
@@ -130,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false);
       toast.success('Déconnexion réussie');
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out', error, 'AuthContext');
       toast.error('Erreur lors de la déconnexion');
     }
   };

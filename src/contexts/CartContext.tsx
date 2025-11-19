@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '@/types/product';
 import { toast } from 'sonner';
+import { useProducts } from './ProductsContext';
 
 interface CartContextType {
   cart: CartItem[];
@@ -15,6 +16,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const { products } = useProducts();
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('sana-cart');
     return saved ? JSON.parse(saved) : [];
@@ -25,6 +27,24 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart]);
 
   const addToCart = (product: Product, quantity: number = 1) => {
+    // Vérifier le stock disponible
+    const currentProduct = products.find(p => p.id === product.id);
+    if (!currentProduct) {
+      toast.error('Produit introuvable');
+      return;
+    }
+
+    const currentCartItem = cart.find(item => item.id === product.id);
+    const currentQuantity = currentCartItem?.quantity || 0;
+    const requestedQuantity = currentQuantity + quantity;
+
+    if (requestedQuantity > currentProduct.stock) {
+      toast.error(
+        `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
+      );
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -50,6 +70,22 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       removeFromCart(productId);
       return;
     }
+
+    // Vérifier le stock disponible
+    const currentProduct = products.find(p => p.id === productId);
+    if (!currentProduct) {
+      toast.error('Produit introuvable');
+      return;
+    }
+
+    if (quantity > currentProduct.stock) {
+      toast.error(
+        `Stock insuffisant. Stock disponible : ${currentProduct.stock} unité(s)`
+      );
+      // Ajuster à la quantité maximale disponible
+      quantity = currentProduct.stock;
+    }
+
     setCart(prev =>
       prev.map(item =>
         item.id === productId ? { ...item, quantity } : item

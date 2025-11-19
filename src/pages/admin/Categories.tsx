@@ -4,6 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,7 +22,9 @@ import { useProducts } from '@/contexts/ProductsContext';
 export default function Categories() {
   const [open, setOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
-  const { categories, addCategory, updateCategory, deleteCategory } = useProducts();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string } | null>(null);
+  const { categories, addCategory, updateCategory, deleteCategory, products } = useProducts();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +47,32 @@ export default function Categories() {
     setEditingCategory(null);
   };
 
-  const handleDeleteCategory = (id: string) => {
-    deleteCategory(id);
-    toast.success('Catégorie supprimée');
+  const handleDeleteClick = (id: string, name: string) => {
+    // Vérifier si la catégorie est utilisée par des produits
+    const productsInCategory = products.filter(p => p.category === id);
+    
+    if (productsInCategory.length > 0) {
+      toast.error(
+        `Impossible de supprimer cette catégorie. Elle est utilisée par ${productsInCategory.length} produit(s).`
+      );
+      return;
+    }
+
+    setCategoryToDelete({ id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      await deleteCategory(categoryToDelete.id);
+      toast.success('Catégorie supprimée');
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors de la suppression de la catégorie');
+    }
   };
 
   return (
@@ -125,7 +160,7 @@ export default function Categories() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteCategory(category.id)}
+                      onClick={() => handleDeleteClick(category.id, category.name)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -139,6 +174,29 @@ export default function Categories() {
           </div>
         </div>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer la catégorie <strong>{categoryToDelete?.name}</strong> ?
+              Cette action est irréversible et la catégorie sera définitivement supprimée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCategoryToDelete(null)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

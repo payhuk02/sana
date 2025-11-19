@@ -1,24 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Search, Eye } from 'lucide-react';
-
-const mockCustomers = [
-  { id: 1, name: 'Jean Dupont', email: 'jean.dupont@email.com', phone: '06 12 34 56 78', orders: 5 },
-  { id: 2, name: 'Marie Martin', email: 'marie.martin@email.com', phone: '06 23 45 67 89', orders: 3 },
-  { id: 3, name: 'Pierre Durand', email: 'pierre.durand@email.com', phone: '06 34 56 78 90', orders: 8 },
-  { id: 4, name: 'Sophie Bernard', email: 'sophie.bernard@email.com', phone: '06 45 67 89 01', orders: 2 },
-];
+import { Search, Eye, Loader2 } from 'lucide-react';
+import { getAllCustomers, Customer } from '@/lib/customers';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCustomers = mockCustomers.filter(customer =>
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const customersData = await getAllCustomers();
+        setCustomers(customersData);
+      } catch (error) {
+        logger.error('Error fetching customers', error, 'Customers');
+        toast.error('Erreur lors du chargement des clients');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
+  const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -50,23 +81,37 @@ export default function Customers() {
                     <TableHead className="min-w-[200px]">Email</TableHead>
                     <TableHead className="min-w-[120px]">Téléphone</TableHead>
                     <TableHead className="w-28">Commandes</TableHead>
+                    <TableHead className="min-w-[120px]">Total dépensé</TableHead>
                     <TableHead className="text-right w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
-                      <TableCell>{customer.orders}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                  {filteredCustomers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {customers.length === 0
+                          ? 'Aucun client pour le moment'
+                          : 'Aucun client ne correspond à votre recherche'}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredCustomers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
+                        <TableCell>{customer.totalOrders}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {formatCurrency(customer.totalSpent)} FCFA
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" title="Voir les détails">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

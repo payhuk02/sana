@@ -8,19 +8,96 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
-import { CreditCard, Landmark } from 'lucide-react';
+import { CreditCard, Landmark, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { createOrder } from '@/lib/orders';
+import { useProducts } from '@/contexts/ProductsContext';
+import { logger } from '@/lib/logger';
 
 const Checkout = () => {
   const { cart, getTotal, clearCart } = useCart();
+  const { products, updateProduct } = useProducts();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank'>('card');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: 'Maroc',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Commande validée avec succès !');
-    clearCart();
-    setTimeout(() => navigate('/'), 1500);
+    setIsSubmitting(true);
+
+    try {
+      // Vérifier à nouveau le stock avant de finaliser
+      for (const item of cart) {
+        const product = products.find(p => p.id === item.id);
+        if (!product) {
+          toast.error(`Le produit "${item.name}" n'est plus disponible`);
+          setIsSubmitting(false);
+          return;
+        }
+        if (product.stock < item.quantity) {
+          toast.error(
+            `Stock insuffisant pour "${item.name}". Stock disponible : ${product.stock}`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Créer la commande
+      const orderData = {
+        customer_email: formData.email,
+        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_phone: formData.phone,
+        shipping_address: {
+          street: formData.address,
+          city: formData.city,
+          postal_code: formData.postalCode,
+          country: formData.country,
+        },
+        payment_method: paymentMethod,
+        items: cart.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      };
+
+      const order = await createOrder(orderData);
+
+      // Réduire le stock des produits
+      for (const item of cart) {
+        const product = products.find(p => p.id === item.id);
+        if (product) {
+          const newStock = product.stock - item.quantity;
+          await updateProduct(item.id, { stock: newStock });
+        }
+      }
+
+      toast.success(`Commande #${order.order_number} validée avec succès !`);
+      clearCart();
+      
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+    } catch (error) {
+      logger.error('Error creating order', error, 'Checkout');
+      toast.error('Erreur lors de la création de la commande. Veuillez réessayer.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   if (cart.length === 0) {
@@ -45,19 +122,41 @@ const Checkout = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">Prénom</Label>
-                    <Input id="firstName" required />
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      required
+                    />
                   </div>
                   <div>
                     <Label htmlFor="lastName">Nom</Label>
-                    <Input id="lastName" required />
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" required />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="phone">Téléphone</Label>
-                    <Input id="phone" type="tel" required />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
               </div>
@@ -68,20 +167,40 @@ const Checkout = () => {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="address">Adresse</Label>
-                    <Input id="address" required />
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="city">Ville</Label>
-                      <Input id="city" required />
+                      <Input
+                        id="city"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        required
+                      />
                     </div>
                     <div>
                       <Label htmlFor="postalCode">Code postal</Label>
-                      <Input id="postalCode" required />
+                      <Input
+                        id="postalCode"
+                        value={formData.postalCode}
+                        onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        required
+                      />
                     </div>
                     <div>
                       <Label htmlFor="country">Pays</Label>
-                      <Input id="country" defaultValue="France" required />
+                      <Input
+                        id="country"
+                        value={formData.country}
+                        onChange={(e) => handleInputChange('country', e.target.value)}
+                        required
+                      />
                     </div>
                   </div>
                 </div>
@@ -127,8 +246,20 @@ const Checkout = () => {
                 )}
               </div>
 
-              <Button type="submit" size="lg" className="w-full">
-                Confirmer la commande
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Traitement en cours...
+                  </>
+                ) : (
+                  'Confirmer la commande'
+                )}
               </Button>
             </form>
           </div>
