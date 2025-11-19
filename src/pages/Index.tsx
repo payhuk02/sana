@@ -7,6 +7,7 @@ import { ProductCardSkeleton } from '@/components/ProductCardSkeleton';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
+import { StructuredData } from '@/components/StructuredData';
 import { SkipLinks } from '@/components/SkipLinks';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
@@ -54,6 +55,8 @@ const Index = () => {
         description="Découvrez notre sélection complète de consommables informatiques : ordinateurs, téléphones, tablettes, TV et accessoires aux meilleurs prix. Livraison rapide et paiement sécurisé."
         keywords="informatique, ordinateurs, téléphones, tablettes, consommables, high-tech, livraison rapide"
       />
+      <StructuredData type="website" />
+      <StructuredData type="organization" />
       <SkipLinks />
       <Navbar />
       

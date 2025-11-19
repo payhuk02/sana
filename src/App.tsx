@@ -4,14 +4,44 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Configuration optimisée de React Query
+// Configuration optimisée de React Query avec retry logic amélioré
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes - données considérées fraîches pendant 5 min
       gcTime: 1000 * 60 * 10, // 10 minutes - cache gardé 10 min après inactivité
       refetchOnWindowFocus: false, // Ne pas refetch au focus de la fenêtre
-      retry: 1, // Retry une seule fois en cas d'erreur
+      retry: (failureCount, error) => {
+        // Ne pas retry pour les erreurs 4xx (erreurs client)
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = error.status as number;
+          if (status >= 400 && status < 500) {
+            return false;
+          }
+        }
+        // Retry jusqu'à 3 fois pour les erreurs réseau/serveur avec backoff exponentiel
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => {
+        // Backoff exponentiel: 1s, 2s, 4s
+        return Math.min(1000 * 2 ** attemptIndex, 10000);
+      },
+      // Timeout après 30 secondes
+      networkMode: 'online',
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        // Ne pas retry les mutations par défaut (sauf erreurs réseau)
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = error.status as number;
+          // Retry uniquement pour les erreurs réseau (5xx) ou timeout
+          if (status >= 500 || status === 0) {
+            return failureCount < 2;
+          }
+        }
+        return false;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
   },
 });

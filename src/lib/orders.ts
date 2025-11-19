@@ -12,10 +12,94 @@ function generateOrderNumber(): string {
 }
 
 /**
- * Crée une nouvelle commande dans Supabase
+ * Vérifie et réduit le stock de manière atomique pour éviter les race conditions
+ * Utilise une mise à jour conditionnelle avec vérification du stock
+ */
+async function updateStockAtomically(
+  productId: string,
+  quantity: number
+): Promise<{ success: boolean; originalStock: number; newStock: number }> {
+  try {
+    // Récupérer le stock actuel
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('stock')
+      .eq('id', productId)
+      .single();
+
+    if (fetchError || !product) {
+      logger.error('Error fetching product stock', fetchError, 'orders');
+      return { success: false, originalStock: 0, newStock: 0 };
+    }
+
+    const originalStock = product.stock;
+
+    // Vérifier si le stock est suffisant
+    if (originalStock < quantity) {
+      return { success: false, originalStock, newStock: originalStock };
+    }
+
+    const newStock = originalStock - quantity;
+
+    // Mettre à jour le stock de manière conditionnelle
+    // Cette requête échouera si le stock a changé entre-temps
+    const { data: updated, error: updateError } = await supabase
+      .from('products')
+      .update({ stock: newStock })
+      .eq('id', productId)
+      .eq('stock', originalStock) // Condition : le stock n'a pas changé
+      .select('stock')
+      .single();
+
+    if (updateError || !updated) {
+      // Le stock a été modifié entre-temps (race condition détectée)
+      logger.warn('Stock update conflict detected', { productId, quantity, originalStock }, 'orders');
+      return { success: false, originalStock, newStock: originalStock };
+    }
+
+    return { success: true, originalStock, newStock: updated.stock };
+  } catch (error) {
+    logger.error('Error in atomic stock update', error, 'orders');
+    return { success: false, originalStock: 0, newStock: 0 };
+  }
+}
+
+/**
+ * Crée une nouvelle commande dans Supabase avec gestion des race conditions de stock
  */
 export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   try {
+    // Étape 1: Vérifier et réserver le stock de manière atomique pour tous les produits
+    const stockUpdates: Array<{ productId: string; quantity: number; success: boolean; originalStock: number; newStock: number }> = [];
+    
+    for (const item of orderData.items) {
+      const result = await updateStockAtomically(item.product_id, item.quantity);
+      stockUpdates.push({
+        productId: item.product_id,
+        quantity: item.quantity,
+        success: result.success,
+        originalStock: result.originalStock,
+        newStock: result.newStock,
+      });
+
+      if (!result.success) {
+        // Annuler toutes les réservations précédentes en restaurant le stock
+        for (const update of stockUpdates) {
+          if (update.success) {
+            await supabase
+              .from('products')
+              .update({ stock: update.originalStock })
+              .eq('id', update.productId);
+          }
+        }
+        
+        throw new Error(
+          `Stock insuffisant pour le produit ${item.product_id}. Stock disponible: ${result.originalStock}`
+        );
+      }
+    }
+
+    // Étape 2: Si tous les stocks sont réservés, créer la commande
     const orderNumber = generateOrderNumber();
     
     // Calculer les totaux
@@ -51,6 +135,15 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     if (orderError) {
       logger.error('Error creating order', orderError, 'orders');
+      // Annuler les réservations de stock en restaurant le stock
+      for (const update of stockUpdates) {
+        if (update.success) {
+          await supabase
+            .from('products')
+            .update({ stock: update.originalStock })
+            .eq('id', update.productId);
+        }
+      }
       throw orderError;
     }
 
@@ -69,8 +162,16 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     if (itemsError) {
       logger.error('Error creating order items', itemsError, 'orders');
-      // Supprimer la commande si les items échouent
+      // Supprimer la commande et restaurer le stock
       await supabase.from('orders').delete().eq('id', order.id);
+      for (const update of stockUpdates) {
+        if (update.success) {
+          await supabase
+            .from('products')
+            .update({ stock: update.originalStock })
+            .eq('id', update.productId);
+        }
+      }
       throw itemsError;
     }
 

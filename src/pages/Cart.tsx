@@ -76,24 +76,29 @@ const Cart = () => {
                     </p>
 
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center border rounded-lg">
+                      <div className="flex items-center border rounded-lg" role="group" aria-label={`Quantité de ${item.name}`}>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          aria-label={`Réduire la quantité de ${item.name}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-4 w-4" aria-hidden="true" />
                         </Button>
-                        <span className="w-12 text-center font-medium">{item.quantity}</span>
+                        <span className="w-12 text-center font-medium" aria-label={`Quantité: ${item.quantity}`}>
+                          {item.quantity}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= item.stock}
+                          aria-label={`Augmenter la quantité de ${item.name}`}
+                          aria-disabled={item.quantity >= item.stock}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
 
@@ -102,8 +107,9 @@ const Cart = () => {
                         size="icon"
                         onClick={() => removeFromCart(item.id)}
                         className="text-destructive hover:text-destructive"
+                        aria-label={`Retirer ${item.name} du panier`}
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-5 w-5" aria-hidden="true" />
                       </Button>
                     </div>
                   </div>

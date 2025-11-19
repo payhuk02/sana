@@ -82,12 +82,14 @@ export const ProductCard = React.memo(({ product }: ProductCardProps) => {
         </div>
 
         {product.stock < 10 && product.stock > 0 && (
-          <p className="text-xs text-destructive mt-2">
+          <p className="text-xs text-destructive mt-2" role="status" aria-live="polite">
             Plus que {product.stock} en stock
           </p>
         )}
         {product.stock === 0 && (
-          <p className="text-xs text-destructive mt-2">Rupture de stock</p>
+          <p className="text-xs text-destructive mt-2" role="status" aria-live="polite">
+            Rupture de stock
+          </p>
         )}
       </CardContent>
 
@@ -99,8 +101,8 @@ export const ProductCard = React.memo(({ product }: ProductCardProps) => {
             className="flex-1"
             size="sm"
           >
-            <Link to={`/product/${product.id}`}>
-              <Eye className="h-4 w-4 mr-2" />
+            <Link to={`/product/${product.id}`} aria-label={`Voir les détails de ${product.name}`}>
+              <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
               Voir
             </Link>
           </Button>
@@ -111,8 +113,9 @@ export const ProductCard = React.memo(({ product }: ProductCardProps) => {
             onClick={() => {
               window.open(getWhatsAppLink(), '_blank');
             }}
+            aria-label={`Contacter pour ${product.name} via WhatsApp`}
           >
-            <MessageCircle className="h-4 w-4 mr-2" />
+            <MessageCircle className="h-4 w-4 mr-2" aria-hidden="true" />
             Contacter
           </Button>
         </div>
@@ -121,8 +124,10 @@ export const ProductCard = React.memo(({ product }: ProductCardProps) => {
           disabled={product.stock === 0}
           className="w-full"
           size="sm"
+          aria-label={`Ajouter ${product.name} au panier`}
+          aria-disabled={product.stock === 0}
         >
-          <ShoppingCart className="h-4 w-4 mr-2" />
+          <ShoppingCart className="h-4 w-4 mr-2" aria-hidden="true" />
           Ajouter au panier
         </Button>
       </CardFooter>

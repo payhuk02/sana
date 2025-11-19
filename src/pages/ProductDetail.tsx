@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEO } from '@/components/SEO';
+import { StructuredData } from '@/components/StructuredData';
 import { SkipLinks } from '@/components/SkipLinks';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCart } from '@/contexts/CartContext';
@@ -63,6 +64,7 @@ const ProductDetail = () => {
         type="product"
         url={`${window.location.origin}/product/${product.id}`}
       />
+      <StructuredData type="product" product={product} />
       <SkipLinks />
       <Navbar />
 

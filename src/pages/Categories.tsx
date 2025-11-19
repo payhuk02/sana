@@ -22,6 +22,8 @@ import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { ErrorState } from '@/components/ErrorState';
+import { logger } from '@/lib/logger';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -46,6 +48,8 @@ const Categories = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
 
   // Récupérer les marques disponibles au chargement
@@ -110,6 +114,7 @@ const Categories = () => {
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
+      setError(null);
       try {
         const serverFilters = getServerFilters();
         const sortConfig = getSortConfig();
@@ -124,8 +129,10 @@ const Categories = () => {
         setProducts(result.products);
         setTotalProducts(result.total);
         setTotalPages(result.totalPages);
-      } catch (error) {
-        console.error('Error loading products:', error);
+      } catch (err) {
+        logger.error('Error loading products', err, 'Categories');
+        const error = err instanceof Error ? err : new Error('Erreur lors du chargement des produits');
+        setError(error);
         setProducts([]);
         setTotalProducts(0);
         setTotalPages(0);
@@ -136,6 +143,46 @@ const Categories = () => {
 
     loadProducts();
   }, [currentPage, debouncedSearchQuery, filters, sortBy]);
+
+  // Fonction pour réessayer le chargement
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    try {
+      const serverFilters = getServerFilters();
+      const sortConfig = getSortConfig();
+      
+      const result = await fetchProductsPaginated(
+        currentPage,
+        ITEMS_PER_PAGE,
+        serverFilters,
+        sortConfig
+      );
+
+      setProducts(result.products);
+      setTotalProducts(result.total);
+      setTotalPages(result.totalPages);
+      setError(null);
+    } catch (err) {
+      logger.error('Error retrying products load', err, 'Categories');
+      const error = err instanceof Error ? err : new Error('Erreur lors du chargement des produits');
+      setError(error);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  // Déterminer le type d'erreur
+  const getErrorType = (): 'network' | 'server' | 'unknown' => {
+    if (!error) return 'unknown';
+    const message = error.message.toLowerCase();
+    if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
+      return 'network';
+    }
+    if (message.includes('server') || message.includes('500') || message.includes('503')) {
+      return 'server';
+    }
+    return 'unknown';
+  };
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -179,7 +226,7 @@ const Categories = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">
               {categoryParam
-                ? categories.find(c => c.id === categoryParam)?.name || 'Produits'
+                ? (categories.find(c => c.id === categoryParam)?.name ?? 'Produits')
                 : 'Tous les produits'}
             </h1>
             <p className="text-muted-foreground">
@@ -226,7 +273,17 @@ const Categories = () => {
 
           {/* Products Grid */}
           <div className="flex-1">
-            {loading ? (
+            {error ? (
+              <div className="py-16">
+                <ErrorState
+                  errorType={getErrorType()}
+                  onRetry={handleRetry}
+                  isRetrying={isRetrying}
+                  title="Erreur lors du chargement des produits"
+                  description={error.message}
+                />
+              </div>
+            ) : loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                   <ProductCardSkeleton key={i} />

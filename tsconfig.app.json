@@ -19,7 +19,7 @@
     "noUnusedLocals": true, // ✅ Enabled - helps catch unused code
     "noUnusedParameters": true, // ✅ Enabled - helps catch unused parameters
     "noImplicitAny": false, // ⚠️ Will enable after fixing implicit any errors
-    "strictNullChecks": false, // ⚠️ Will enable after fixing null/undefined errors
+    "strictNullChecks": true, // ✅ Enabled - ensures null/undefined safety
     "noFallthroughCasesInSwitch": true, // ✅ Enabled - prevents switch bugs
 
     "baseUrl": ".",

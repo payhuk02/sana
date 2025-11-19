@@ -10,6 +10,8 @@ import { MapPin, Phone, Mail, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createContactMessage } from '@/lib/contact';
 import { logger } from '@/lib/logger';
+import { contactSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 const Contact = () => {
   const { settings } = useSiteSettings();
@@ -21,25 +23,47 @@ const Contact = () => {
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormErrors({});
 
     try {
+      // Valider les données avec Zod
+      const validatedData = contactSchema.parse(formData);
+
       await createContactMessage({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        subject: formData.subject,
-        message: formData.message,
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone || undefined,
+        subject: validatedData.subject,
+        message: validatedData.message,
       });
 
       toast.success('Message envoyé avec succès ! Nous vous répondrons sous 24h.');
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (error) {
-      logger.error('Error submitting contact form', error, 'Contact');
-      toast.error('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+      if (error instanceof z.ZodError) {
+        // Gérer les erreurs de validation
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path.length > 0) {
+            errors[err.path[0] as string] = err.message;
+          }
+        });
+        setFormErrors(errors);
+        
+        // Afficher le premier message d'erreur
+        const firstError = error.errors[0];
+        if (firstError) {
+          toast.error(firstError.message);
+        }
+      } else {
+        logger.error('Error submitting contact form', error, 'Contact');
+        toast.error('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -142,10 +166,17 @@ const Contact = () => {
                         id="name"
                         name="name"
                         value={formData.name}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (formErrors.name) setFormErrors(prev => ({ ...prev, name: '' }));
+                        }}
                         required
                         placeholder="Jean Dupont"
+                        className={formErrors.name ? 'border-destructive' : ''}
                       />
+                      {formErrors.name && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.name}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="email">Email *</Label>
@@ -154,10 +185,17 @@ const Contact = () => {
                         name="email"
                         type="email"
                         value={formData.email}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (formErrors.email) setFormErrors(prev => ({ ...prev, email: '' }));
+                        }}
                         required
                         placeholder="jean.dupont@email.com"
+                        className={formErrors.email ? 'border-destructive' : ''}
                       />
+                      {formErrors.email && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.email}</p>
+                      )}
                     </div>
                   </div>
 
@@ -169,9 +207,16 @@ const Contact = () => {
                         name="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: '' }));
+                        }}
                         placeholder="+33 6 12 34 56 78"
+                        className={formErrors.phone ? 'border-destructive' : ''}
                       />
+                      {formErrors.phone && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.phone}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="subject">Sujet *</Label>
@@ -179,10 +224,17 @@ const Contact = () => {
                         id="subject"
                         name="subject"
                         value={formData.subject}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (formErrors.subject) setFormErrors(prev => ({ ...prev, subject: '' }));
+                        }}
                         required
                         placeholder="Demande d'information"
+                        className={formErrors.subject ? 'border-destructive' : ''}
                       />
+                      {formErrors.subject && (
+                        <p className="text-sm text-destructive mt-1">{formErrors.subject}</p>
+                      )}
                     </div>
                   </div>
 
@@ -192,11 +244,18 @@ const Contact = () => {
                       id="message"
                       name="message"
                       value={formData.message}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        handleChange(e);
+                        if (formErrors.message) setFormErrors(prev => ({ ...prev, message: '' }));
+                      }}
                       required
                       placeholder="Décrivez votre demande..."
                       rows={6}
+                      className={formErrors.message ? 'border-destructive' : ''}
                     />
+                    {formErrors.message && (
+                      <p className="text-sm text-destructive mt-1">{formErrors.message}</p>
+                    )}
                   </div>
 
                   <Button 

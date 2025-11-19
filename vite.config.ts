@@ -20,10 +20,11 @@ export default defineConfig(({ mode }) => ({
     target: 'esnext',
     minify: 'esbuild', // Plus rapide que terser
     cssMinify: true,
-    sourcemap: mode === 'development',
+    sourcemap: mode === 'development', // Pas de sourcemaps en production pour la sécurité
     // Compression des assets
     reportCompressedSize: true,
     chunkSizeWarningLimit: 1000,
+    // Optimisation pour Vercel
     rollupOptions: {
       output: {
         // Code splitting optimisé et granulaire
