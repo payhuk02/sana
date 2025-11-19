@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Sana Distribution - Design System */
+    --background: 210 11% 96%;
+    --foreground: 240 33% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 33% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 33% 7%;
+
+    /* Violet roi - Couleur principale */
+    --primary: 277 94% 36%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Variations du violet */
+    --primary-light: 277 94% 46%;
+    --primary-dark: 277 94% 26%;
+
+    /* Bleu nuit - Couleur secondaire */
+    --secondary: 240 33% 7%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 11% 96%;
+    --muted-foreground: 240 10% 40%;
+
+    --accent: 277 94% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 88%;
+    --input: 240 10% 88%;
+    --ring: 277 94% 36%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(277, 94%, 36%) 0%, hsl(240, 33%, 7%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 11%, 98%) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsl(277, 94%, 36%, 0.08);
+    --shadow-md: 0 4px 16px hsl(277, 94%, 36%, 0.12);
+    --shadow-lg: 0 8px 32px hsl(277, 94%, 36%, 0.16);
+    
+    /* Transitions */
+    --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 240 33% 7%;
+    --foreground: 0 0% 100%;
+
+    --card: 240 28% 10%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 240 28% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 277 94% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 20% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 20% 15%;
+    --muted-foreground: 240 10% 60%;
+
+    --accent: 277 94% 46%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 20% 18%;
+    --input: 240 20% 18%;
+    --ring: 277 94% 46%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-hero);
+  }
+  
+  .shadow-primary {
+    box-shadow: var(--shadow-md);
+  }
+}
