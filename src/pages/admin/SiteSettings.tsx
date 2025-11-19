@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { supabase } from '@/lib/supabase';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, X, Palette } from 'lucide-react';
 import { ColorPicker } from '@/components/admin/ColorPicker';
 import { logger } from '@/lib/logger';
@@ -18,6 +18,16 @@ export default function SiteSettings() {
   const [uploading, setUploading] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Synchroniser les previews avec les settings au chargement
+  useEffect(() => {
+    if (settings.hero_image && !bannerPreview) {
+      setBannerPreview(settings.hero_image);
+    }
+    if (settings.logo && !logoPreview) {
+      setLogoPreview(settings.logo);
+    }
+  }, [settings.hero_image, settings.logo, bannerPreview, logoPreview]);
 
   const googleFonts = [
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 
