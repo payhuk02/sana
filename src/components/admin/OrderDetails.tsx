@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
 import {
   Dialog,
@@ -8,7 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Package, MapPin, CreditCard, Calendar } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Package, MapPin, CreditCard, Calendar, FileText, Save } from 'lucide-react';
+import { updateOrderNotes } from '@/lib/orders';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface OrderDetailsProps {
   order: Order | null;
@@ -40,6 +47,18 @@ const paymentMethodLabels: Record<string, string> = {
 };
 
 export function OrderDetails({ order, open, onOpenChange }: OrderDetailsProps) {
+  const [notes, setNotes] = useState(order?.notes || '');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+
+  // Mettre à jour les notes quand l'order change
+  useEffect(() => {
+    if (order) {
+      setNotes(order.notes || '');
+      setIsEditingNotes(false);
+    }
+  }, [order]);
+
   if (!order) return null;
 
   const formatCurrency = (amount: number) => {
@@ -48,6 +67,26 @@ export function OrderDetails({ order, open, onOpenChange }: OrderDetailsProps) {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    try {
+      const success = await updateOrderNotes(order.id, notes);
+      if (success) {
+        toast.success('Notes enregistrées avec succès');
+        setIsEditingNotes(false);
+        // Mettre à jour l'order localement
+        order.notes = notes;
+      } else {
+        toast.error('Erreur lors de l\'enregistrement des notes');
+      }
+    } catch (error) {
+      logger.error('Error saving order notes', error, 'OrderDetails');
+      toast.error('Erreur lors de l\'enregistrement des notes');
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
 
   return (
@@ -183,6 +222,71 @@ export function OrderDetails({ order, open, onOpenChange }: OrderDetailsProps) {
                 <span className="text-primary">{formatCurrency(order.total)} FCFA</span>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Notes internes */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notes internes
+              </h3>
+              {!isEditingNotes && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingNotes(true)}
+                >
+                  {notes ? 'Modifier' : 'Ajouter des notes'}
+                </Button>
+              )}
+            </div>
+            {isEditingNotes ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ajoutez des notes internes sur cette commande..."
+                  rows={4}
+                  className="resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNotes(order.notes || '');
+                      setIsEditingNotes(false);
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveNotes}
+                    disabled={isSavingNotes}
+                  >
+                    {isSavingNotes ? (
+                      <>
+                        <Save className="h-4 w-4 mr-2 animate-spin" />
+                        Enregistrement...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Enregistrer
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground pl-6 p-3 bg-muted rounded-lg min-h-[60px]">
+                {notes || 'Aucune note pour cette commande'}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

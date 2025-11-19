@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, CategoryInfo } from '@/types/product';
 import { products as initialProducts, categories as initialCategories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
@@ -85,107 +85,106 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     };
   }, []);
 
-  const addProduct = async (product: Product) => {
+  const addProduct = useCallback(async (product: Product) => {
     try {
-      const { error } = await supabase.from('products').insert([product]);
+      const { data, error } = await supabase.from('products').insert([product]).select().single();
       if (error) {
         logger.error('Error adding product to database', error, 'ProductsContext');
         throw error;
       }
-      setProducts(prev => [...prev, product]);
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
+      // Cela évite les doubles mises à jour et garantit la cohérence avec la DB
     } catch (error) {
       logger.error('Failed to add product', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
 
-  const updateProduct = async (id: string, updatedProduct: Partial<Product>) => {
+  const updateProduct = useCallback(async (id: string, updatedProduct: Partial<Product>) => {
     try {
       const { error } = await supabase.from('products').update(updatedProduct).eq('id', id);
       if (error) {
         logger.error('Error updating product in database', error, 'ProductsContext');
         throw error;
       }
-      setProducts(prev =>
-        prev.map(p => (p.id === id ? { ...p, ...updatedProduct } : p))
-      );
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
+      // Cela évite les doubles mises à jour et garantit la cohérence avec la DB
     } catch (error) {
       logger.error('Failed to update product', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = useCallback(async (id: string) => {
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) {
         logger.error('Error deleting product from database', error, 'ProductsContext');
         throw error;
       }
-      setProducts(prev => prev.filter(p => p.id !== id));
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
+      // Cela évite les doubles mises à jour et garantit la cohérence avec la DB
     } catch (error) {
       logger.error('Failed to delete product', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
 
-  const addCategory = async (category: CategoryInfo) => {
+  const addCategory = useCallback(async (category: CategoryInfo) => {
     try {
       const { error } = await supabase.from('categories').insert([category]);
       if (error) {
         logger.error('Error adding category to database', error, 'ProductsContext');
         throw error;
       }
-      setCategories(prev => [...prev, category]);
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
     } catch (error) {
       logger.error('Failed to add category', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
 
-  const updateCategory = async (id: string, updatedCategory: Partial<CategoryInfo>) => {
+  const updateCategory = useCallback(async (id: string, updatedCategory: Partial<CategoryInfo>) => {
     try {
       const { error } = await supabase.from('categories').update(updatedCategory).eq('id', id);
       if (error) {
         logger.error('Error updating category in database', error, 'ProductsContext');
         throw error;
       }
-      setCategories(prev =>
-        prev.map(c => (c.id === id ? { ...c, ...updatedCategory } : c))
-      );
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
     } catch (error) {
       logger.error('Failed to update category', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = useCallback(async (id: string) => {
     try {
       const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) {
         logger.error('Error deleting category from database', error, 'ProductsContext');
         throw error;
       }
-      setCategories(prev => prev.filter(c => c.id !== id));
+      // Ne pas mettre à jour le state local ici - la subscription Realtime le fera automatiquement
     } catch (error) {
       logger.error('Failed to delete category', error, 'ProductsContext');
       throw error;
     }
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    products,
+    categories,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+  }), [products, categories, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory]);
 
   return (
-    <ProductsContext.Provider
-      value={{
-        products,
-        categories,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        addCategory,
-        updateCategory,
-        deleteCategory,
-      }}
-    >
+    <ProductsContext.Provider value={value}>
       {children}
     </ProductsContext.Provider>
   );

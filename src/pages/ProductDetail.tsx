@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCart } from '@/contexts/CartContext';
-import { Star, ShoppingCart, TruckIcon, ShieldCheck, ChevronLeft, Plus, Minus } from 'lucide-react';
+import { Star, ShoppingCart, TruckIcon, ShieldCheck, Plus, Minus } from 'lucide-react';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 import NotFound from './NotFound';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { products } = useProducts();
+  const { products, categories } = useProducts();
   const product = products.find(p => p.id === id);
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -35,22 +37,24 @@ const ProductDetail = () => {
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Link to="/categories" className="flex items-center text-muted-foreground hover:text-primary transition-colors">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Retour aux produits
-          </Link>
-        </div>
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          items={[
+            { label: 'Catégories', href: '/categories' },
+            { label: categories.find(c => c.id === product.category)?.name || 'Produits', href: `/categories?category=${product.category}` },
+            { label: product.name }
+          ]}
+        />
 
         {/* Product Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
           {/* Images */}
           <div className="space-y-4">
             <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
-              <img
+              <ImageWithFallback
                 src={product.image}
                 alt={product.name}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
               {product.discount && (

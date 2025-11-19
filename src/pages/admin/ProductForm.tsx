@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { supabase } from '@/lib/supabase';
 import { productSchema } from '@/lib/validations';
@@ -206,6 +206,84 @@ export default function ProductForm() {
                     required
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Spécifications techniques</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  {Object.entries(formData.specifications).map(([key, value], index) => {
+                    // Utiliser un identifiant unique pour chaque entrée
+                    const entryId = `${key}-${index}`;
+                    return (
+                      <div key={entryId} className="flex gap-2">
+                        <Input
+                          placeholder="Nom de la spécification (ex: Processeur)"
+                          value={key}
+                          onChange={(e) => {
+                            const newKey = e.target.value.trim();
+                            if (newKey === key) return; // Pas de changement
+                            
+                            const newSpecs = { ...formData.specifications };
+                            delete newSpecs[key];
+                            if (newKey) {
+                              newSpecs[newKey] = value;
+                            }
+                            setFormData(prev => ({ ...prev, specifications: newSpecs }));
+                          }}
+                          className="flex-1"
+                        />
+                        <Input
+                          placeholder="Valeur (ex: Intel Core i7)"
+                          value={value}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              specifications: { ...prev.specifications, [key]: e.target.value }
+                            }));
+                          }}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const newSpecs = { ...formData.specifications };
+                            delete newSpecs[key];
+                            setFormData(prev => ({ ...prev, specifications: newSpecs }));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newKey = `Nouvelle spécification ${Object.keys(formData.specifications).length + 1}`;
+                    setFormData(prev => ({
+                      ...prev,
+                      specifications: { ...prev.specifications, [newKey]: '' }
+                    }));
+                  }}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une spécification
+                </Button>
+                {Object.keys(formData.specifications).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Aucune spécification. Cliquez sur "Ajouter une spécification" pour en ajouter.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

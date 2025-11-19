@@ -7,11 +7,15 @@ import { Search, Eye, Loader2 } from 'lucide-react';
 import { getAllCustomers, Customer } from '@/lib/customers';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { CustomerDetails } from '@/components/admin/CustomerDetails';
+import { formatCurrency } from '@/lib/utils';
 
 export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -35,12 +39,9 @@ export default function Customers() {
     customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const handleViewDetails = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setDetailsOpen(true);
   };
 
   if (loading) {
@@ -105,7 +106,12 @@ export default function Customers() {
                           {formatCurrency(customer.totalSpent)} FCFA
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" title="Voir les détails">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Voir les détails"
+                            onClick={() => handleViewDetails(customer)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -118,6 +124,12 @@ export default function Customers() {
           </div>
         </div>
       </Card>
+
+      <CustomerDetails
+        customer={selectedCustomer}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </div>
   );
 }

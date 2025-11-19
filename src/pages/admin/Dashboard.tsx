@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, ShoppingCart, Users, DollarSign, Loader2 } from 'lucide-react';
+import { Package, ShoppingCart, Users, DollarSign, Loader2, TrendingUp } from 'lucide-react';
 import { useProducts } from '@/contexts/ProductsContext';
-import { getAllOrders, getOrderStats } from '@/lib/orders';
+import { getAllOrders, getOrderStats, getRevenueChartData, getStatusDistributionData } from '@/lib/orders';
 import { Order } from '@/types/order';
 import { Badge } from '@/components/ui/badge';
 import { logger } from '@/lib/logger';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 const statusLabels: Record<string, string> = {
   pending: 'En attente',
@@ -35,17 +37,23 @@ export default function Dashboard() {
     paidOrders: 0,
     deliveredOrders: 0,
   });
+  const [revenueData, setRevenueData] = useState<Array<{ date: string; revenue: number }>>([]);
+  const [statusData, setStatusData] = useState<Array<{ name: string; value: number; status: string }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ordersData, statsData] = await Promise.all([
+        const [ordersData, statsData, revenueChartData, statusChartData] = await Promise.all([
           getAllOrders(),
           getOrderStats(),
+          getRevenueChartData(),
+          getStatusDistributionData(),
         ]);
         setOrders(ordersData.slice(0, 5)); // 5 commandes les plus récentes
         setStats(statsData);
+        setRevenueData(revenueChartData);
+        setStatusData(statusChartData);
       } catch (error) {
         logger.error('Error fetching dashboard data', error, 'Dashboard');
       } finally {
@@ -145,6 +153,107 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Revenus (7 derniers jours)</CardTitle>
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {revenueData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Aucune donnée disponible
+              </p>
+            ) : (
+              <ChartContainer
+                config={{
+                  revenue: {
+                    label: 'Revenus',
+                    color: 'hsl(var(--primary))',
+                  },
+                }}
+                className="h-[300px]"
+              >
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    className="text-xs"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    className="text-xs"
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  />
+                  <ChartTooltip
+                    content={<ChartTooltipContent />}
+                    cursor={false}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    fill="var(--color-revenue)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Status Distribution Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition des statuts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statusData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Aucune donnée disponible
+              </p>
+            ) : (
+              <ChartContainer
+                config={statusData.reduce((acc, item, index) => {
+                  const colors = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d', '#ffc658'];
+                  acc[item.status] = {
+                    label: item.name,
+                    color: colors[index % colors.length],
+                  };
+                  return acc;
+                }, {} as Record<string, { label: string; color: string }>)}
+                className="h-[300px]"
+              >
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {statusData.map((entry, index) => {
+                      const colors = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d', '#ffc658'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

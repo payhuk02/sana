@@ -219,6 +219,31 @@ export async function updateOrderStatus(
 }
 
 /**
+ * Met à jour les notes d'une commande
+ */
+export async function updateOrderNotes(
+  orderId: string,
+  notes: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ notes, updated_at: new Date().toISOString() })
+      .eq('id', orderId);
+
+    if (error) {
+      logger.error('Error updating order notes', error, 'orders');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error('Failed to update order notes', error, 'orders');
+    return false;
+  }
+}
+
+/**
  * Récupère les statistiques des commandes
  */
 export async function getOrderStats() {
@@ -260,6 +285,95 @@ export async function getOrderStats() {
       paidOrders: 0,
       deliveredOrders: 0,
     };
+  }
+}
+
+/**
+ * Récupère les données pour les graphiques (revenus par jour sur 7 jours)
+ */
+export async function getRevenueChartData() {
+  try {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('total, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100); // Dernières 100 commandes pour calculer les 7 derniers jours
+
+    if (error) {
+      logger.error('Error fetching revenue chart data', error, 'orders');
+      return [];
+    }
+
+    // Grouper par jour sur les 7 derniers jours
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      date.setHours(0, 0, 0, 0);
+      return date;
+    });
+
+    const revenueByDay = last7Days.map(date => {
+      const dayStart = date.toISOString();
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+      const dayEndISO = dayEnd.toISOString();
+
+      const dayOrders = orders?.filter(order => {
+        const orderDate = new Date(order.created_at);
+        return orderDate >= date && orderDate <= dayEnd;
+      }) || [];
+
+      const revenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+      return {
+        date: date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+        revenue: Math.round(revenue),
+      };
+    });
+
+    return revenueByDay;
+  } catch (error) {
+    logger.error('Error calculating revenue chart data', error, 'orders');
+    return [];
+  }
+}
+
+/**
+ * Récupère les données pour le graphique de répartition des statuts
+ */
+export async function getStatusDistributionData() {
+  try {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('status');
+
+    if (error) {
+      logger.error('Error fetching status distribution data', error, 'orders');
+      return [];
+    }
+
+    const statusCounts: Record<string, number> = {};
+    orders?.forEach(order => {
+      statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
+    });
+
+    const statusLabels: Record<string, string> = {
+      pending: 'En attente',
+      paid: 'Payée',
+      processing: 'En traitement',
+      shipped: 'Expédiée',
+      delivered: 'Livrée',
+      cancelled: 'Annulée',
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: statusLabels[status] || status,
+      value: count,
+      status,
+    }));
+  } catch (error) {
+    logger.error('Error calculating status distribution data', error, 'orders');
+    return [];
   }
 }
 

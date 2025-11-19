@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { createOrder } from '@/lib/orders';
 import { useProducts } from '@/contexts/ProductsContext';
 import { logger } from '@/lib/logger';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const Checkout = () => {
   const { cart, getTotal, clearCart } = useCart();
@@ -110,6 +111,12 @@ const Checkout = () => {
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 py-8">
+        <Breadcrumbs
+          items={[
+            { label: 'Panier', href: '/cart' },
+            { label: 'Commande' }
+          ]}
+        />
         <h1 className="text-3xl font-bold mb-8">Finaliser la commande</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -276,6 +283,7 @@ const Checkout = () => {
                       <img
                         src={item.image}
                         alt={item.name}
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                     </div>

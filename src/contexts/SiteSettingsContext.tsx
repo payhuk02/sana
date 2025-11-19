@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
@@ -141,9 +141,17 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
   useEffect(() => {
     const channel = supabase
       .channel('settings-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
-        supabase.from('site_settings').select('*').single().then(({ data }) => {
-          if (data) setSettings(data);
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'site_settings' 
+      }, (payload) => {
+        // Récupérer les données complètes après un changement
+        supabase.from('site_settings').select('*').single().then(({ data, error }) => {
+          if (data && !error) {
+            setSettings(data);
+            logger.info('Site settings updated via Realtime', 'SiteSettingsContext');
+          }
         });
       })
       .subscribe();
@@ -153,7 +161,7 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  const updateSettings = async (newSettings: Partial<SiteSettings>) => {
+  const updateSettings = useCallback(async (newSettings: Partial<SiteSettings>) => {
     try {
       const updated = { ...settings, ...newSettings };
       
@@ -168,16 +176,24 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
         throw error;
       }
       
-      // Update local state immediately for instant UI feedback
+      // Update local state immediately for instant UI feedback (couleurs, polices)
+      // La subscription Realtime synchronisera aussi, mais la mise à jour immédiate
+      // est importante pour l'expérience utilisateur (feedback visuel instantané)
       setSettings(updated);
+      logger.info('Site settings updated successfully', 'SiteSettingsContext');
     } catch (error) {
       logger.error('Failed to update site settings', error, 'SiteSettingsContext');
       throw error;
     }
-  };
+  }, [settings]);
+
+  const value = useMemo(() => ({
+    settings,
+    updateSettings,
+  }), [settings, updateSettings]);
 
   return (
-    <SiteSettingsContext.Provider value={{ settings, updateSettings }}>
+    <SiteSettingsContext.Provider value={value}>
       {children}
     </SiteSettingsContext.Provider>
   );

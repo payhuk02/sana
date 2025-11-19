@@ -4,6 +4,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, getTotal } = useCart();
@@ -36,6 +37,7 @@ const Cart = () => {
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 py-8">
+        <Breadcrumbs items={[{ label: 'Panier' }]} />
         <h1 className="text-3xl font-bold mb-8">Mon Panier</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -53,6 +55,7 @@ const Cart = () => {
                   <img
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </Link>

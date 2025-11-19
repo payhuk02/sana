@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Product } from '@/types/product';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 
 interface ProductCardProps {
   product: Product;
@@ -32,9 +33,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <Card className="group overflow-hidden hover-lift h-full flex flex-col">
       <Link to={`/product/${product.id}`} className="block relative overflow-hidden bg-muted">
-        <img
+        <ImageWithFallback
           src={product.image}
           alt={product.name}
+          loading="lazy"
           className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
         />
         {product.discount && (

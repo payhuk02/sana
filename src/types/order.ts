@@ -31,6 +31,7 @@ export interface Order {
   tax: number;
   shipping_cost: number;
   total: number;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
