@@ -35,8 +35,13 @@ export default function SiteSettings() {
     'Source Sans Pro', 'Ubuntu', 'Oswald', 'Work Sans'
   ];
 
-  const handleChange = (field: string, value: string) => {
-    updateSettings({ [field]: value });
+  const handleChange = async (field: string, value: string) => {
+    try {
+      await updateSettings({ [field]: value });
+    } catch (error) {
+      logger.error(`Error updating ${field}`, error, 'SiteSettings');
+      toast.error(`Erreur lors de la mise à jour de ${field}`);
+    }
   };
 
   const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,10 +94,14 @@ export default function SiteSettings() {
     }
   };
 
-  const removeBanner = () => {
-    handleChange('hero_image', '');
-    setBannerPreview(null);
-    toast.success('Image de bannière supprimée');
+  const removeBanner = async () => {
+    try {
+      await handleChange('hero_image', '');
+      setBannerPreview(null);
+      toast.success('Image de bannière supprimée');
+    } catch (error) {
+      // Error already handled in handleChange
+    }
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,10 +148,14 @@ export default function SiteSettings() {
     }
   };
 
-  const removeLogo = () => {
-    handleChange('logo', '');
-    setLogoPreview(null);
-    toast.success('Logo supprimé');
+  const removeLogo = async () => {
+    try {
+      await handleChange('logo', '');
+      setLogoPreview(null);
+      toast.success('Logo supprimé');
+    } catch (error) {
+      // Error already handled in handleChange
+    }
   };
 
   const handleSave = () => {

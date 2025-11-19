@@ -50,7 +50,7 @@ const defaultSettings: SiteSettings = {
 
 interface SiteSettingsContextType {
   settings: SiteSettings;
-  updateSettings: (newSettings: Partial<SiteSettings>) => void;
+  updateSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | undefined>(undefined);
@@ -165,11 +165,42 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
     try {
       const updated = { ...settings, ...newSettings };
       
-      // Update settings in database (assuming single row table)
-      const { error } = await supabase
+      // Essayer d'abord de récupérer une ligne existante pour obtenir l'ID
+      const { data: existingData, error: fetchError } = await supabase
         .from('site_settings')
-        .update(updated)
-        .limit(1);
+        .select('id')
+        .limit(1)
+        .maybeSingle(); // maybeSingle() retourne null si aucune ligne n'existe (au lieu de throw)
+      
+      let error;
+      if (existingData?.id) {
+        // Si une ligne existe avec un ID, faire un update avec l'ID
+        const { error: updateError } = await supabase
+          .from('site_settings')
+          .update(updated)
+          .eq('id', existingData.id);
+        error = updateError;
+      } else if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 = no rows returned (normal si la table est vide)
+        // Si c'est une autre erreur, la propager
+        logger.error('Error fetching site settings', fetchError, 'SiteSettingsContext');
+        throw fetchError;
+      } else {
+        // Si aucune ligne n'existe, utiliser upsert (créera la ligne)
+        // Supabase utilisera automatiquement la clé primaire si elle existe
+        const { error: upsertError } = await supabase
+          .from('site_settings')
+          .upsert(updated, { onConflict: 'id' });
+        error = upsertError;
+        
+        // Si upsert avec onConflict échoue (pas de clé primaire id), essayer sans onConflict
+        if (error && error.message?.includes('onConflict')) {
+          const { error: upsertError2 } = await supabase
+            .from('site_settings')
+            .upsert(updated);
+          error = upsertError2;
+        }
+      }
       
       if (error) {
         logger.error('Error updating site settings in database', error, 'SiteSettingsContext');
