@@ -204,13 +204,14 @@ const supabaseAnonKey = 'eyJhbG...'; // Clé publique - OK
 
 ## 📱 Déploiement
 
-### Lovable (Recommandé)
+### Vercel (Recommandé)
 
-Lovable déploie automatiquement:
+Vercel offre:
 - ✅ Build optimisé
 - ✅ CDN mondial
 - ✅ HTTPS automatique
 - ✅ Domaine personnalisé disponible
+- ✅ Sitemap automatique
 
 ### Autres Options
 
