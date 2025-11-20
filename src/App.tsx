@@ -68,16 +68,16 @@ const Legal = lazy(() => import("./pages/Legal"));
 const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Pages admin (chargées immédiatement pour meilleure UX)
-import AdminLogin from "./pages/admin/AdminLogin";
-import Dashboard from "./pages/admin/Dashboard";
-import Products from "./pages/admin/Products";
-import ProductForm from "./pages/admin/ProductForm";
-import AdminCategories from "./pages/admin/Categories";
-import Orders from "./pages/admin/Orders";
-import Customers from "./pages/admin/Customers";
-import SiteSettings from "./pages/admin/SiteSettings";
-import AdminSettings from "./pages/admin/AdminSettings";
+// Pages admin (Lazy loadées pour optimiser le bundle client)
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const Products = lazy(() => import("./pages/admin/Products"));
+const ProductForm = lazy(() => import("./pages/admin/ProductForm"));
+const AdminCategories = lazy(() => import("./pages/admin/Categories"));
+const Orders = lazy(() => import("./pages/admin/Orders"));
+const Customers = lazy(() => import("./pages/admin/Customers"));
+const SiteSettings = lazy(() => import("./pages/admin/SiteSettings"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 // Composant de chargement
 const PageLoader = () => (
@@ -180,17 +180,57 @@ const App = () => (
                       } 
                     />
                     
-                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/login" element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AdminLogin />
+                      </Suspense>
+                    } />
                     <Route path="/admin" element={<AdminLayout />}>
-                      <Route path="dashboard" element={<Dashboard />} />
-                      <Route path="products" element={<Products />} />
-                      <Route path="products/add" element={<ProductForm />} />
-                      <Route path="products/edit/:id" element={<ProductForm />} />
-                      <Route path="categories" element={<AdminCategories />} />
-                      <Route path="orders" element={<Orders />} />
-                      <Route path="customers" element={<Customers />} />
-                      <Route path="site-settings" element={<SiteSettings />} />
-                      <Route path="admin-settings" element={<AdminSettings />} />
+                      <Route path="dashboard" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <Dashboard />
+                        </Suspense>
+                      } />
+                      <Route path="products" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <Products />
+                        </Suspense>
+                      } />
+                      <Route path="products/add" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <ProductForm />
+                        </Suspense>
+                      } />
+                      <Route path="products/edit/:id" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <ProductForm />
+                        </Suspense>
+                      } />
+                      <Route path="categories" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <AdminCategories />
+                        </Suspense>
+                      } />
+                      <Route path="orders" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <Orders />
+                        </Suspense>
+                      } />
+                      <Route path="customers" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <Customers />
+                        </Suspense>
+                      } />
+                      <Route path="site-settings" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <SiteSettings />
+                        </Suspense>
+                      } />
+                      <Route path="admin-settings" element={
+                        <Suspense fallback={<PageLoader />}>
+                          <AdminSettings />
+                        </Suspense>
+                      } />
                     </Route>
                     
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
