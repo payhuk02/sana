@@ -31,7 +31,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card className="group overflow-hidden hover-lift h-full flex flex-col">
+    <Card className="group overflow-hidden hover-lift h-full flex flex-col max-w-full">
       <Link to={`/product/${product.id}`} className="block relative overflow-hidden bg-muted">
         <ImageWithFallback
           src={product.image}
@@ -51,10 +51,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </Link>
 
-      <CardContent className="flex-1 p-4">
-        <Link to={`/product/${product.id}`}>
-          <p className="text-xs text-muted-foreground mb-1">{product.brand}</p>
-          <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+      <CardContent className="flex-1 p-3 sm:p-4 min-w-0">
+        <Link to={`/product/${product.id}`} className="block min-w-0">
+          <p className="text-xs text-muted-foreground mb-1 truncate">{product.brand}</p>
+          <h3 className="font-semibold text-sm sm:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors min-w-0">
             {product.name}
           </h3>
         </Link>
@@ -90,40 +90,47 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 space-y-2">
-        <div className="flex gap-2">
+      <CardFooter className="p-2 sm:p-3 md:p-4 pt-0">
+        <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 w-full">
           <Button
             asChild
             variant="outline"
-            className="flex-1"
+            className="flex-1 w-full sm:flex-1 min-w-0 overflow-hidden"
             size="sm"
           >
-            <Link to={`/product/${product.id}`}>
-              <Eye className="h-4 w-4 mr-2" />
-              Voir
+            <Link 
+              to={`/product/${product.id}`} 
+              className="flex items-center justify-center gap-1.5 min-w-0 w-full"
+            >
+              <Eye className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline text-sm truncate whitespace-nowrap">Voir</span>
             </Link>
           </Button>
           <Button
             variant="outline"
-            className="flex-1"
+            className="flex-1 w-full sm:flex-1 min-w-0 overflow-hidden"
             size="sm"
             onClick={() => {
               window.open(getWhatsAppLink(), '_blank');
             }}
           >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Contacter
+            <span className="flex items-center justify-center gap-1.5 min-w-0 w-full">
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline text-sm truncate whitespace-nowrap">Contacter</span>
+            </span>
+          </Button>
+          <Button
+            onClick={() => addToCart(product)}
+            disabled={product.stock === 0}
+            className="flex-1 w-full sm:flex-1 min-w-0 overflow-hidden"
+            size="sm"
+          >
+            <span className="flex items-center justify-center gap-1.5 min-w-0 w-full">
+              <ShoppingCart className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline text-sm truncate whitespace-nowrap">Ajouter</span>
+            </span>
           </Button>
         </div>
-        <Button
-          onClick={() => addToCart(product)}
-          disabled={product.stock === 0}
-          className="w-full"
-          size="sm"
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Ajouter au panier
-        </Button>
       </CardFooter>
     </Card>
   );
