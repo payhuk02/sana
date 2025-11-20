@@ -44,6 +44,7 @@ interface SiteSettings {
   hero_image: string;
   aboutText: string;
   logo: string;
+  favicon: string;
   primary_color: string;
   secondary_color: string;
   accent_color: string;
@@ -89,6 +90,7 @@ const defaultSettings: SiteSettings = {
   hero_image: '/hero-banner.jpg',
   aboutText: 'Sana Distribution est votre partenaire de confiance pour tous vos besoins en informatique.',
   logo: '',
+  favicon: '',
   primary_color: '262.1 83.3% 57.8%',
   secondary_color: '220 14.3% 95.9%',
   accent_color: '262.1 83.3% 57.8%',
@@ -245,6 +247,15 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
       if (!document.getElementById('heading-font-style')) {
         document.head.appendChild(style);
       }
+
+      // Apply Favicon
+      if (settings.favicon) {
+        const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = settings.favicon;
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
     }
   }, [settings]);
 
@@ -254,7 +265,7 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
       try {
         const { data, error } = await supabase
           .from('site_settings')
-          .select('siteName, slogan, email, phone, whatsapp, address, facebook, instagram, heroTitle, heroSubtitle, hero_image, aboutText, logo, primary_color, secondary_color, accent_color, background_color, foreground_color, primary_font, heading_font, privacy_policy, legal_notices, terms_of_sale, opening_hours, faq_content')
+          .select('siteName, slogan, email, phone, whatsapp, address, facebook, instagram, heroTitle, heroSubtitle, hero_image, aboutText, logo, favicon, primary_color, secondary_color, accent_color, background_color, foreground_color, primary_font, heading_font, privacy_policy, legal_notices, terms_of_sale, opening_hours, faq_content')
           .single();
 
         if (data && !error) {
@@ -330,7 +341,7 @@ export const SiteSettingsProvider = ({ children }: { children: React.ReactNode }
       }, () => {
         // Récupérer les données complètes après un changement
         if (isMounted) {
-          supabase.from('site_settings').select('siteName, slogan, email, phone, whatsapp, address, facebook, instagram, heroTitle, heroSubtitle, hero_image, aboutText, logo, primary_color, secondary_color, accent_color, background_color, foreground_color, primary_font, heading_font, privacy_policy, legal_notices, terms_of_sale, opening_hours, faq_content, features_content, testimonials_content, homepage_stats, homepage_sections, about_hero_description, about_values, about_stats, about_team_text, about_commitment_text').single().then(({ data, error }) => {
+          supabase.from('site_settings').select('siteName, slogan, email, phone, whatsapp, address, facebook, instagram, heroTitle, heroSubtitle, hero_image, aboutText, logo, favicon, primary_color, secondary_color, accent_color, background_color, foreground_color, primary_font, heading_font, privacy_policy, legal_notices, terms_of_sale, opening_hours, faq_content, features_content, testimonials_content, homepage_stats, homepage_sections, about_hero_description, about_values, about_stats, about_team_text, about_commitment_text').single().then(({ data, error }) => {
             if (isMounted && data && !error) {
               // Process JSONB fields (handle JSONB from database)
               const processedData = {

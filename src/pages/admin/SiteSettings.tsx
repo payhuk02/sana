@@ -18,6 +18,7 @@ export default function SiteSettings() {
   const [uploading, setUploading] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
 
   // Synchroniser les previews avec les settings au chargement
   useEffect(() => {
@@ -27,7 +28,10 @@ export default function SiteSettings() {
     if (settings.logo && !logoPreview) {
       setLogoPreview(settings.logo);
     }
-  }, [settings.hero_image, settings.logo, bannerPreview, logoPreview]);
+    if (settings.favicon && !faviconPreview) {
+      setFaviconPreview(settings.favicon);
+    }
+  }, [settings.hero_image, settings.logo, settings.favicon, bannerPreview, logoPreview, faviconPreview]);
 
   const googleFonts = [
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 
@@ -159,6 +163,60 @@ export default function SiteSettings() {
       await handleChange('logo', '');
       setLogoPreview(null);
       toast.success('Logo supprimé');
+    } catch (error) {
+      // Error already handled in handleChange
+    }
+  };
+
+  const handleFaviconUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image valide');
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      toast.error('Le favicon ne doit pas dépasser 1 MB');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `favicon-${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('logo-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logo-images')
+        .getPublicUrl(fileName);
+
+      handleChange('favicon', publicUrl);
+      setFaviconPreview(publicUrl);
+      toast.success('Favicon uploadé avec succès');
+    } catch (error) {
+      logger.error('Error uploading favicon', error, 'SiteSettings');
+      toast.error('Erreur lors de l\'upload du favicon');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeFavicon = async () => {
+    try {
+      await handleChange('favicon', '');
+      setFaviconPreview(null);
+      toast.success('Favicon supprimé');
     } catch (error) {
       // Error already handled in handleChange
     }
@@ -630,6 +688,57 @@ export default function SiteSettings() {
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
                   Format PNG ou SVG recommandé, max 2 MB
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-5 h-5 border border-foreground rounded-sm flex items-center justify-center text-[10px] font-bold">F</div>
+                Favicon du site
+              </CardTitle>
+              <CardDescription>L'icône qui apparaît dans l'onglet du navigateur</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(faviconPreview || settings.favicon) && (
+                <div className="relative inline-block">
+                  <img
+                    src={faviconPreview || settings.favicon}
+                    alt="Favicon"
+                    className="h-12 w-12 object-contain border border-border rounded-lg p-2 bg-background"
+                  />
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={removeFavicon}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFaviconUpload}
+                  className="hidden"
+                  id="favicon-upload"
+                  disabled={uploading}
+                />
+                <Button
+                  onClick={() => document.getElementById('favicon-upload')?.click()}
+                  disabled={uploading}
+                  variant="outline"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploading ? 'Upload en cours...' : 'Uploader un favicon'}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Format .ico, .png ou .svg recommandé (32x32px), max 1 MB
                 </p>
               </div>
             </CardContent>
