@@ -39,7 +39,9 @@ export const productSchema = z.object({
   imageUrl: z.string()
     .url('URL d\'image invalide')
     .optional()
-    .or(z.literal('')),
+    .nullable()
+    .or(z.literal(''))
+    .transform(val => val === '' ? undefined : val),
 });
 
 export const authSchema = z.object({

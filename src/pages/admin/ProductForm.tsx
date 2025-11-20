@@ -43,8 +43,16 @@ export default function ProductForm() {
     setUploading(true);
 
     try {
-      // Validate form data
-      const validatedData = productSchema.parse({
+      // Vérifier qu'au moins une image (fichier ou URL) est fournie pour les nouveaux produits
+      // Pour l'édition, on garde l'image existante si aucune nouvelle n'est fournie
+      if (!isEdit && !imageFile && !formData.imageUrl) {
+        toast.error('Veuillez fournir une image (fichier ou URL)');
+        setUploading(false);
+        return;
+      }
+
+      // Préparer les données de validation
+      const validationData: any = {
         name: formData.name,
         category: formData.category,
         price: parseFloat(formData.price),
@@ -52,31 +60,103 @@ export default function ProductForm() {
         stock: parseInt(formData.stock),
         brand: formData.brand,
         description: formData.description,
-        imageUrl: formData.imageUrl,
-      });
+      };
 
-      let imageUrl = formData.imageUrl || '/placeholder.svg';
+      // Ajouter imageUrl seulement si fourni ET qu'aucun fichier n'est uploadé
+      // Si un fichier est uploadé, on ignore l'URL (le fichier a la priorité)
+      if (!imageFile && formData.imageUrl && formData.imageUrl.trim() !== '') {
+        validationData.imageUrl = formData.imageUrl;
+      } else if (imageFile) {
+        // Si un fichier est uploadé, on ne valide pas l'URL (optionnel)
+        validationData.imageUrl = '';
+      }
 
-      // Upload image if file is selected
+      // Valider les données
+      const validatedData = productSchema.parse(validationData);
+
+      // Utiliser l'image existante en mode édition si aucune nouvelle n'est fournie
+      let imageUrl = isEdit && existingProduct?.image ? existingProduct.image : '/placeholder.svg';
+
+      // Upload image if file is selected (priorité au fichier)
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, imageFile);
-
-        if (uploadError) {
-          toast.error('Erreur lors de l\'upload de l\'image');
-          throw uploadError;
+        // Valider le type de fichier
+        if (!imageFile.type.startsWith('image/')) {
+          toast.error('Veuillez sélectionner un fichier image valide');
+          setUploading(false);
+          return;
         }
 
+        // Valider la taille (max 10MB)
+        if (imageFile.size > 10 * 1024 * 1024) {
+          toast.error('L\'image ne doit pas dépasser 10 MB');
+          setUploading(false);
+          return;
+        }
+
+        // Nettoyer le nom de fichier pour éviter les caractères spéciaux
+        const sanitizeFileName = (name: string) => {
+          return name
+            .replace(/[^a-zA-Z0-9.-]/g, '_')
+            .replace(/\s+/g, '_')
+            .toLowerCase();
+        };
+
+        const fileExt = imageFile.name.split('.').pop()?.toLowerCase() || 'png';
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 9);
+        const sanitizedName = sanitizeFileName(imageFile.name.split('.')[0]);
+        const fileName = `${timestamp}-${randomStr}-${sanitizedName}.${fileExt}`;
+        
+        // Créer un chemin structuré dans le bucket
+        const filePath = `products/${fileName}`;
+
+        logger.info(`Uploading image: ${filePath} (${(imageFile.size / 1024 / 1024).toFixed(2)} MB)`, 'ProductForm');
+
+        // Upload vers Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, imageFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          logger.error('Error uploading image', {
+            error: uploadError,
+            filePath,
+            fileName: imageFile.name,
+            fileSize: imageFile.size,
+            fileType: imageFile.type,
+          }, 'ProductForm');
+          
+          // Messages d'erreur plus spécifiques
+          let errorMessage = 'Erreur lors de l\'upload de l\'image';
+          if (uploadError.message?.includes('Bucket not found')) {
+            errorMessage = 'Le bucket product-images n\'existe pas. Veuillez le créer dans Supabase Storage.';
+          } else if (uploadError.message?.includes('new row violates row-level security policy')) {
+            errorMessage = 'Permissions insuffisantes. Vérifiez que vous êtes connecté en tant qu\'admin.';
+          } else if (uploadError.message?.includes('The resource already exists')) {
+            errorMessage = 'Un fichier avec ce nom existe déjà. Veuillez réessayer.';
+          } else if (uploadError.message) {
+            errorMessage = `Erreur: ${uploadError.message}`;
+          }
+          
+          toast.error(errorMessage);
+          setUploading(false);
+          return;
+        }
+
+        // Récupérer l'URL publique
         const { data: { publicUrl } } = supabase.storage
           .from('product-images')
           .getPublicUrl(filePath);
 
+        logger.info(`Image uploaded successfully: ${publicUrl}`, 'ProductForm');
         imageUrl = publicUrl;
+        toast.success('Image uploadée avec succès');
+      } else if (formData.imageUrl) {
+        // Utiliser l'URL fournie si pas de fichier
+        imageUrl = formData.imageUrl;
       }
 
       const productData = {
@@ -120,12 +200,38 @@ export default function ProductForm() {
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Valider le type de fichier immédiatement
+      if (!file.type.startsWith('image/')) {
+        toast.error('Veuillez sélectionner un fichier image valide');
+        e.target.value = ''; // Réinitialiser l'input
+        return;
+      }
+
+      // Valider la taille (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('L\'image ne doit pas dépasser 10 MB');
+        e.target.value = ''; // Réinitialiser l'input
+        return;
+      }
+
       setImageFile(file);
+      // Créer un preview du fichier sélectionné
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      // Si aucun fichier, réinitialiser
+      setImageFile(null);
+      // Restaurer l'URL ou le preview existant si disponible
+      if (formData.imageUrl) {
+        setImagePreview(formData.imageUrl);
+      } else if (existingProduct?.image) {
+        setImagePreview(existingProduct.image);
+      } else {
+        setImagePreview('');
+      }
     }
   };
 
@@ -353,6 +459,14 @@ export default function ProductForm() {
                     accept="image/*"
                     onChange={handleImageFileChange}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Formats acceptés: JPG, PNG, WebP (max 10 MB)
+                  </p>
+                  {imageFile && (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ Fichier sélectionné: {imageFile.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="relative">
@@ -367,7 +481,9 @@ export default function ProductForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">URL de l'image</Label>
+                  <Label htmlFor="imageUrl">
+                    URL de l'image {!imageFile && !isEdit ? <span className="text-muted-foreground">(optionnel)</span> : ''}
+                  </Label>
                   <Input
                     id="imageUrl"
                     type="url"
@@ -375,9 +491,23 @@ export default function ProductForm() {
                     value={formData.imageUrl}
                     onChange={(e) => {
                       handleChange('imageUrl', e.target.value);
-                      setImagePreview(e.target.value);
+                      // Mettre à jour le preview seulement si pas de fichier sélectionné
+                      if (!imageFile) {
+                        setImagePreview(e.target.value);
+                      }
                     }}
+                    disabled={!!imageFile}
                   />
+                  {imageFile && (
+                    <p className="text-xs text-muted-foreground">
+                      L'URL est désactivée car un fichier est sélectionné. Le fichier sera utilisé.
+                    </p>
+                  )}
+                  {!imageFile && !isEdit && (
+                    <p className="text-xs text-muted-foreground">
+                      Si vous n'uploadez pas de fichier, fournissez une URL d'image valide.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
