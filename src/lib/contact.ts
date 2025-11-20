@@ -52,7 +52,7 @@ export async function getAllContactMessages(): Promise<ContactMessage[]> {
   try {
     const { data: messages, error } = await supabase
       .from('contact_messages')
-      .select('id, name, email, phone, subject, message, status, created_at')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {

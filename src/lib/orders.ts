@@ -12,94 +12,10 @@ function generateOrderNumber(): string {
 }
 
 /**
- * Vérifie et réduit le stock de manière atomique pour éviter les race conditions
- * Utilise une mise à jour conditionnelle avec vérification du stock
+ * Crée une nouvelle commande dans Supabase
  */
-async function updateStockAtomically(
-  productId: string,
-  quantity: number
-): Promise<{ success: boolean; originalStock: number; newStock: number }> {
+export async function createOrder(orderData: CreateOrderData, userId?: string): Promise<Order> {
   try {
-    // Récupérer le stock actuel
-    const { data: product, error: fetchError } = await supabase
-      .from('products')
-      .select('stock')
-      .eq('id', productId)
-      .single();
-
-    if (fetchError || !product) {
-      logger.error('Error fetching product stock', fetchError, 'orders');
-      return { success: false, originalStock: 0, newStock: 0 };
-    }
-
-    const originalStock = product.stock;
-
-    // Vérifier si le stock est suffisant
-    if (originalStock < quantity) {
-      return { success: false, originalStock, newStock: originalStock };
-    }
-
-    const newStock = originalStock - quantity;
-
-    // Mettre à jour le stock de manière conditionnelle
-    // Cette requête échouera si le stock a changé entre-temps
-    const { data: updated, error: updateError } = await supabase
-      .from('products')
-      .update({ stock: newStock })
-      .eq('id', productId)
-      .eq('stock', originalStock) // Condition : le stock n'a pas changé
-      .select('stock')
-      .single();
-
-    if (updateError || !updated) {
-      // Le stock a été modifié entre-temps (race condition détectée)
-      logger.warn('Stock update conflict detected', { productId, quantity, originalStock }, 'orders');
-      return { success: false, originalStock, newStock: originalStock };
-    }
-
-    return { success: true, originalStock, newStock: updated.stock };
-  } catch (error) {
-    logger.error('Error in atomic stock update', error, 'orders');
-    return { success: false, originalStock: 0, newStock: 0 };
-  }
-}
-
-/**
- * Crée une nouvelle commande dans Supabase avec gestion des race conditions de stock
- */
-export async function createOrder(orderData: CreateOrderData): Promise<Order> {
-  try {
-    // Étape 1: Vérifier et réserver le stock de manière atomique pour tous les produits
-    const stockUpdates: Array<{ productId: string; quantity: number; success: boolean; originalStock: number; newStock: number }> = [];
-    
-    for (const item of orderData.items) {
-      const result = await updateStockAtomically(item.product_id, item.quantity);
-      stockUpdates.push({
-        productId: item.product_id,
-        quantity: item.quantity,
-        success: result.success,
-        originalStock: result.originalStock,
-        newStock: result.newStock,
-      });
-
-      if (!result.success) {
-        // Annuler toutes les réservations précédentes en restaurant le stock
-        for (const update of stockUpdates) {
-          if (update.success) {
-            await supabase
-              .from('products')
-              .update({ stock: update.originalStock })
-              .eq('id', update.productId);
-          }
-        }
-        
-        throw new Error(
-          `Stock insuffisant pour le produit ${item.product_id}. Stock disponible: ${result.originalStock}`
-        );
-      }
-    }
-
-    // Étape 2: Si tous les stocks sont réservés, créer la commande
     const orderNumber = generateOrderNumber();
     
     // Calculer les totaux
@@ -111,12 +27,19 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
     const shippingCost = 0; // Livraison gratuite
     const total = subtotal + tax + shippingCost;
 
+    // Récupérer l'utilisateur actuellement connecté si userId n'est pas fourni
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+
     // Créer la commande principale
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([
         {
           order_number: orderNumber,
+          user_id: userId || null,
           customer_email: orderData.customer_email,
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
@@ -135,15 +58,6 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     if (orderError) {
       logger.error('Error creating order', orderError, 'orders');
-      // Annuler les réservations de stock en restaurant le stock
-      for (const update of stockUpdates) {
-        if (update.success) {
-          await supabase
-            .from('products')
-            .update({ stock: update.originalStock })
-            .eq('id', update.productId);
-        }
-      }
       throw orderError;
     }
 
@@ -162,16 +76,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     if (itemsError) {
       logger.error('Error creating order items', itemsError, 'orders');
-      // Supprimer la commande et restaurer le stock
+      // Supprimer la commande si les items échouent
       await supabase.from('orders').delete().eq('id', order.id);
-      for (const update of stockUpdates) {
-        if (update.success) {
-          await supabase
-            .from('products')
-            .update({ stock: update.originalStock })
-            .eq('id', update.productId);
-        }
-      }
       throw itemsError;
     }
 
@@ -195,7 +101,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   try {
     const { data: order, error } = await supabase
       .from('orders')
-      .select('id, order_number, customer_email, customer_name, customer_phone, shipping_address, payment_method, payment_status, status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at')
+      .select('*')
       .eq('id', orderId)
       .single();
 
@@ -241,13 +147,68 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 }
 
 /**
+ * Récupère les commandes d'un utilisateur spécifique
+ */
+export async function getUserOrders(userId: string): Promise<Order[]> {
+  try {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching user orders', error, 'orders');
+      return [];
+    }
+
+    // Pour chaque commande, récupérer les items
+    const ordersWithItems = await Promise.all(
+      (orders || []).map(async (order) => {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select(`
+            *,
+            products (
+              id,
+              name,
+              image
+            )
+          `)
+          .eq('order_id', order.id);
+
+        const orderItems = (items || []).map((item: any) => ({
+          id: item.id,
+          product_id: item.product_id,
+          product_name: item.products?.name || 'Produit supprimé',
+          product_image: item.products?.image || '',
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.subtotal,
+        }));
+
+        return {
+          ...order,
+          items: orderItems,
+        } as Order;
+      })
+    );
+
+    return ordersWithItems;
+  } catch (error) {
+    logger.error('Error fetching user orders', error, 'orders');
+    return [];
+  }
+}
+
+/**
  * Récupère toutes les commandes (pour admin)
  */
 export async function getAllOrders(): Promise<Order[]> {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('id, order_number, customer_email, customer_name, customer_phone, shipping_address, payment_method, payment_status, status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {

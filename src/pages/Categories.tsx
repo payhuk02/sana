@@ -6,10 +6,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { FilterSidebar, FilterState } from '@/components/FilterSidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { useProducts } from '@/contexts/ProductsContext';
-import { Category, Product } from '@/types/product';
-import { fetchProductsPaginated, fetchAvailableBrands, ProductFilters, ProductSort } from '@/lib/products';
-import { Loader2 } from 'lucide-react';
-import { ProductCardSkeleton } from '@/components/ProductCardSkeleton';
+import { Category } from '@/types/product';
 import {
   Select,
   SelectContent,
@@ -22,14 +19,12 @@ import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { ErrorState } from '@/components/ErrorState';
-import { logger } from '@/lib/logger';
 
 const ITEMS_PER_PAGE = 12;
 
 const Categories = () => {
-  const [searchParams] = useSearchParams();
-  const { categories } = useProducts();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { products, categories } = useProducts();
   const categoryParam = searchParams.get('category') as Category | null;
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -43,146 +38,69 @@ const Categories = () => {
     inStock: false,
   });
 
-  // État pour les produits paginés
-  const [products, setProducts] = useState<Product[]>([]);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const availableBrands = useMemo(() => {
+    return [...new Set(products.map(p => p.brand))].sort();
+  }, [products]);
 
-  // Récupérer les marques disponibles au chargement
-  useEffect(() => {
-    fetchAvailableBrands().then(setAvailableBrands);
-  }, []);
+  const filteredProducts = useMemo(() => {
+    let result = products;
 
-  // Convertir le tri local en format serveur
-  const getSortConfig = (): ProductSort => {
+    // Search (avec debounce)
+    if (debouncedSearchQuery) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        p.brand.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      );
+    }
+
+    // Price range
+    result = result.filter(p =>
+      p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
+    );
+
+    // Brands
+    if (filters.brands.length > 0) {
+      result = result.filter(p => filters.brands.includes(p.brand));
+    }
+
+    // Categories
+    if (filters.categories.length > 0) {
+      result = result.filter(p => filters.categories.includes(p.category));
+    }
+
+    // In stock
+    if (filters.inStock) {
+      result = result.filter(p => p.stock > 0);
+    }
+
+    // Sort
     switch (sortBy) {
       case 'price-asc':
-        return { field: 'price', order: 'asc' };
+        result = result.sort((a, b) => a.price - b.price);
+        break;
       case 'price-desc':
-        return { field: 'price', order: 'desc' };
+        result = result.sort((a, b) => b.price - a.price);
+        break;
       case 'rating':
-        return { field: 'rating', order: 'desc' };
+        result = result.sort((a, b) => b.rating - a.rating);
+        break;
       case 'newest':
-        return { field: 'reviews', order: 'desc', isNew: true };
+        result = result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+        break;
       default:
-        return { field: 'reviews', order: 'desc' };
-    }
-  };
-
-  // Convertir les filtres locaux en format serveur
-  const getServerFilters = (): ProductFilters => {
-    const serverFilters: ProductFilters = {};
-
-    if (debouncedSearchQuery) {
-      serverFilters.search = debouncedSearchQuery;
+        result = result.sort((a, b) => b.reviews - a.reviews);
     }
 
-    if (filters.categories.length > 0) {
-      serverFilters.category = filters.categories.length === 1 
-        ? filters.categories[0] 
-        : filters.categories;
-    }
+    return result;
+  }, [products, debouncedSearchQuery, filters, sortBy]);
 
-    if (filters.brands.length > 0) {
-      serverFilters.brands = filters.brands;
-    }
-
-    if (filters.priceRange[0] > 0) {
-      serverFilters.priceMin = filters.priceRange[0];
-    }
-
-    if (filters.priceRange[1] < 5000) {
-      serverFilters.priceMax = filters.priceRange[1];
-    }
-
-    if (filters.minRating > 0) {
-      serverFilters.minRating = filters.minRating;
-    }
-
-    if (filters.inStock) {
-      serverFilters.inStock = true;
-    }
-
-    return serverFilters;
-  };
-
-  // Charger les produits avec pagination côté serveur
-  useEffect(() => {
-    const loadProducts = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const serverFilters = getServerFilters();
-        const sortConfig = getSortConfig();
-        
-        const result = await fetchProductsPaginated(
-          currentPage,
-          ITEMS_PER_PAGE,
-          serverFilters,
-          sortConfig
-        );
-
-        setProducts(result.products);
-        setTotalProducts(result.total);
-        setTotalPages(result.totalPages);
-      } catch (err) {
-        logger.error('Error loading products', err, 'Categories');
-        const error = err instanceof Error ? err : new Error('Erreur lors du chargement des produits');
-        setError(error);
-        setProducts([]);
-        setTotalProducts(0);
-        setTotalPages(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, [currentPage, debouncedSearchQuery, filters, sortBy]);
-
-  // Fonction pour réessayer le chargement
-  const handleRetry = async () => {
-    setIsRetrying(true);
-    try {
-      const serverFilters = getServerFilters();
-      const sortConfig = getSortConfig();
-      
-      const result = await fetchProductsPaginated(
-        currentPage,
-        ITEMS_PER_PAGE,
-        serverFilters,
-        sortConfig
-      );
-
-      setProducts(result.products);
-      setTotalProducts(result.total);
-      setTotalPages(result.totalPages);
-      setError(null);
-    } catch (err) {
-      logger.error('Error retrying products load', err, 'Categories');
-      const error = err instanceof Error ? err : new Error('Erreur lors du chargement des produits');
-      setError(error);
-    } finally {
-      setIsRetrying(false);
-    }
-  };
-
-  // Déterminer le type d'erreur
-  const getErrorType = (): 'network' | 'server' | 'unknown' => {
-    if (!error) return 'unknown';
-    const message = error.message.toLowerCase();
-    if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
-      return 'network';
-    }
-    if (message.includes('server') || message.includes('500') || message.includes('503')) {
-      return 'server';
-    }
-    return 'unknown';
-  };
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -226,11 +144,11 @@ const Categories = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">
               {categoryParam
-                ? (categories.find(c => c.id === categoryParam)?.name ?? 'Produits')
+                ? categories.find(c => c.id === categoryParam)?.name || 'Produits'
                 : 'Tous les produits'}
             </h1>
             <p className="text-muted-foreground">
-              {totalProducts} produit{totalProducts > 1 ? 's' : ''} trouvé{totalProducts > 1 ? 's' : ''}
+              {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}
             </p>
           </div>
 
@@ -273,26 +191,10 @@ const Categories = () => {
 
           {/* Products Grid */}
           <div className="flex-1">
-            {error ? (
-              <div className="py-16">
-                <ErrorState
-                  errorType={getErrorType()}
-                  onRetry={handleRetry}
-                  isRetrying={isRetrying}
-                  title="Erreur lors du chargement des produits"
-                  description={error.message}
-                />
-              </div>
-            ) : loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-                {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                  <ProductCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : products.length > 0 ? (
+            {filteredProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-                  {products.map((product) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
@@ -354,7 +256,7 @@ const Categories = () => {
                 )}
 
                 <div className="text-center mt-4 text-sm text-muted-foreground">
-                  Affichage de {products.length} sur {totalProducts} produit{totalProducts > 1 ? 's' : ''}
+                  Affichage de {paginatedProducts.length} sur {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''}
                 </div>
               </>
             ) : (

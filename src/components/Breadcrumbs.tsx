@@ -1,4 +1,3 @@
-import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Breadcrumb,
@@ -10,16 +9,16 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Home } from 'lucide-react';
 
-interface BreadcrumbItemType {
+interface BreadcrumbItem {
   label: string;
   href?: string;
 }
 
 interface BreadcrumbsProps {
-  items: BreadcrumbItemType[];
+  items: BreadcrumbItem[];
 }
 
-export const Breadcrumbs = memo(function Breadcrumbs({ items }: BreadcrumbsProps) {
+export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
     <Breadcrumb className="mb-6">
       <BreadcrumbList>
@@ -48,5 +47,5 @@ export const Breadcrumbs = memo(function Breadcrumbs({ items }: BreadcrumbsProps
       </BreadcrumbList>
     </Breadcrumb>
   );
-});
+}
 

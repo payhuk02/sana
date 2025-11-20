@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 export const Navbar = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const { getItemCount } = useCart();
   const { settings } = useSiteSettings();
+  const { user } = useAuth();
   const itemCount = getItemCount();
 
   const navLinks = useMemo(() => [
@@ -86,14 +88,19 @@ export const Navbar = React.memo(() => {
               </Link>
             </Button>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="hidden sm:flex"
-              aria-label="Compte utilisateur"
-            >
-              <User className="h-5 w-5" aria-hidden="true" />
-            </Button>
+            {user && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                asChild
+                className="hidden sm:flex"
+                aria-label="Mon compte"
+              >
+                <Link to="/account">
+                  <User className="h-5 w-5" aria-hidden="true" />
+                </Link>
+              </Button>
+            )}
 
             <Button 
               variant="ghost" 
@@ -157,17 +164,19 @@ export const Navbar = React.memo(() => {
                       ))}
                     </div>
 
-                    <div className="space-y-1 pt-4 border-t">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Compte</h3>
-                      <Link
-                        to="/account"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
-                      >
-                        <User className="h-5 w-5 mr-3 text-muted-foreground" />
-                        Mon compte
-                      </Link>
-                    </div>
+                    {user && (
+                      <div className="space-y-1 pt-4 border-t">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Compte</h3>
+                        <Link
+                          to="/account"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
+                        >
+                          <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                          Mon compte
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>

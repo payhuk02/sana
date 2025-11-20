@@ -1,59 +1,21 @@
 # Fichiers à ignorer lors du déploiement Vercel
-
-# Dépendances et builds
 node_modules
-dist
-dist-ssr
-*.local
-
-# Environment
+.git
 .env
 .env.local
 .env.*.local
-
-# Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Editor
+.DS_Store
+dist
 .vscode
 .idea
-*.swp
-*.swo
-.DS_Store
-
-# Documentation (garder README.md pour Vercel)
 *.md
 !README.md
-
-# SQL scripts
 *.sql
-
-# Analyse et rapports
 ANALYSE_*.md
 CORRECTIONS_*.md
 GUIDE_*.md
 RESUME_*.md
 IMPLEMENTATION_*.md
-SETUP_*.md
-OPTIMISATIONS_*.md
-QUICK_START.md
-TYPESCRIPT_*.md
-
-# Config
 .cursorrules
 
-# Tests
-coverage
-.nyc_output
-.vitest
-
-# Git
-.git
-.gitignore
-
-# Vercel
-.vercel

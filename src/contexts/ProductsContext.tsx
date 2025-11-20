@@ -27,8 +27,8 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     const fetchData = async () => {
       try {
         const [productsRes, categoriesRes] = await Promise.all([
-          supabase.from('products').select('id, name, category, price, originalPrice, image, description, specifications, brand, stock, rating, reviews, featured, isNew, discount'),
-          supabase.from('categories').select('id, name, icon, description')
+          supabase.from('products').select('*'),
+          supabase.from('categories').select('*')
         ]);
 
         if (productsRes.data && productsRes.data.length > 0) {
@@ -59,55 +59,29 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     fetchData();
   }, []);
 
-  // Listen for real-time updates avec cleanup optimisé
+  // Listen for real-time updates
   useEffect(() => {
-    let isMounted = true; // Flag pour éviter les mises à jour après unmount
-
     const productsChannel = supabase
       .channel('products-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        // Recharger uniquement les colonnes nécessaires
-        if (isMounted) {
-          supabase
-            .from('products')
-            .select('id, name, category, price, originalPrice, image, description, specifications, brand, stock, rating, reviews, featured, isNew, discount')
-            .then(({ data }) => {
-              if (isMounted && data) setProducts(data);
-            })
-            .catch((error) => {
-              if (isMounted) {
-                logger.error('Error in products realtime subscription', error, 'ProductsContext');
-              }
-            });
-        }
+        supabase.from('products').select('*').then(({ data }) => {
+          if (data) setProducts(data);
+        });
       })
       .subscribe();
 
     const categoriesChannel = supabase
       .channel('categories-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        if (isMounted) {
-          supabase.from('categories').select('id, name, icon, description').then(({ data }) => {
-            if (isMounted && data) setCategories(data);
-          })
-          .catch((error) => {
-            if (isMounted) {
-              logger.error('Error in categories realtime subscription', error, 'ProductsContext');
-            }
-          });
-        }
+        supabase.from('categories').select('*').then(({ data }) => {
+          if (data) setCategories(data);
+        });
       })
       .subscribe();
 
     return () => {
-      isMounted = false; // Marquer comme unmounted
-      // Cleanup des channels
-      supabase.removeChannel(productsChannel).catch(() => {
-        // Ignorer les erreurs de cleanup
-      });
-      supabase.removeChannel(categoriesChannel).catch(() => {
-        // Ignorer les erreurs de cleanup
-      });
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(categoriesChannel);
     };
   }, []);
 
@@ -198,28 +172,16 @@ export const ProductsProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, []);
 
-  // Séparer les valeurs pour éviter les re-renders inutiles
-  // Les données (products, categories) changent moins souvent que les fonctions
-  const dataValue = useMemo(() => ({
+  const value = useMemo(() => ({
     products,
     categories,
-  }), [products, categories]);
-
-  // Les fonctions sont stables grâce à useCallback
-  const actionsValue = useMemo(() => ({
     addProduct,
     updateProduct,
     deleteProduct,
     addCategory,
     updateCategory,
     deleteCategory,
-  }), [addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory]);
-
-  // Combiner les valeurs
-  const value = useMemo(() => ({
-    ...dataValue,
-    ...actionsValue,
-  }), [dataValue, actionsValue]);
+  }), [products, categories, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory]);
 
   return (
     <ProductsContext.Provider value={value}>

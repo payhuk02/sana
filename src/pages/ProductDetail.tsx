@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -6,9 +6,6 @@ import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SEO } from '@/components/SEO';
-import { StructuredData } from '@/components/StructuredData';
-import { SkipLinks } from '@/components/SkipLinks';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCart } from '@/contexts/CartContext';
 import { Star, ShoppingCart, TruckIcon, ShieldCheck, Plus, Minus } from 'lucide-react';
@@ -19,83 +16,54 @@ import NotFound from './NotFound';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { products, categories } = useProducts();
+  const product = products.find(p => p.id === id);
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-
-  // Optimisation : useMemo pour éviter les recalculs
-  const product = useMemo(
-    () => products.find(p => p.id === id),
-    [products, id]
-  );
-
-  const similarProducts = useMemo(
-    () => product
-      ? products
-          .filter(p => p.category === product.category && p.id !== product.id)
-          .slice(0, 4)
-      : [],
-    [products, product]
-  );
-
-  const categoryName = useMemo(
-    () => categories.find(c => c.id === product?.category)?.name || 'Produits',
-    [categories, product]
-  );
 
   if (!product) {
     return <NotFound />;
   }
 
+  const similarProducts = products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, 4);
+
   const handleAddToCart = () => {
     addToCart(product, quantity);
   };
 
-  const productDescription = product.description.length > 160 
-    ? product.description.substring(0, 160) + '...'
-    : product.description;
-
   return (
     <div className="min-h-screen flex flex-col">
-      <SEO
-        title={product.name}
-        description={`${product.name} - ${product.brand}. ${productDescription} Prix: ${product.price}€. ${product.stock > 0 ? 'En stock' : 'Rupture de stock'}.`}
-        keywords={`${product.name}, ${product.brand}, ${product.category}, informatique, consommables`}
-        image={product.image}
-        type="product"
-        url={`${window.location.origin}/product/${product.id}`}
-      />
-      <StructuredData type="product" product={product} />
-      <SkipLinks />
       <Navbar />
 
-      <main id="main-content" className="flex-1 container mx-auto px-4 py-8" tabIndex={-1}>
+      <main className="flex-1 container mx-auto px-4 py-8">
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
             { label: 'Catégories', href: '/categories' },
-            { label: categoryName, href: `/categories?category=${product.category}` },
+            { label: categories.find(c => c.id === product.category)?.name || 'Produits', href: `/categories?category=${product.category}` },
             { label: product.name }
           ]}
         />
 
         {/* Product Info */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 mb-12 sm:mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
           {/* Images */}
           <div className="space-y-4">
-            <div className="relative aspect-square bg-muted rounded-xl sm:rounded-2xl overflow-hidden border border-border/50">
+            <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
               <ImageWithFallback
                 src={product.image}
                 alt={product.name}
-                loading="eager"
-                className="w-full h-full object-contain p-4"
+                loading="lazy"
+                className="w-full h-full object-cover"
               />
               {product.discount && (
-                <Badge className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-destructive text-destructive-foreground">
+                <Badge className="absolute top-4 right-4 bg-destructive text-destructive-foreground">
                   -{product.discount}%
                 </Badge>
               )}
               {product.isNew && (
-                <Badge className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-primary text-primary-foreground">
+                <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
                   Nouveau
                 </Badge>
               )}
@@ -103,10 +71,10 @@ const ProductDetail = () => {
           </div>
 
           {/* Details */}
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6">
             <div>
-              <p className="text-sm text-muted-foreground mb-1 sm:mb-2">{product.brand}</p>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{product.name}</h1>
+              <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
               
               {/* Rating */}
               <div className="flex items-center gap-4 mb-4">
@@ -114,7 +82,7 @@ const ProductDetail = () => {
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                      className={`h-5 w-5 ${
                         i < Math.floor(product.rating)
                           ? 'fill-primary text-primary'
                           : 'text-muted-foreground'
@@ -122,40 +90,38 @@ const ProductDetail = () => {
                     />
                   ))}
                 </div>
-                <span className="text-xs sm:text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {product.rating} ({product.reviews} avis)
                 </span>
               </div>
 
               {/* Price */}
-              <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="flex items-baseline gap-3 mb-6">
                 {product.originalPrice && (
-                  <span className="text-lg sm:text-2xl text-muted-foreground line-through">
+                  <span className="text-2xl text-muted-foreground line-through">
                     {product.originalPrice.toFixed(0)} FCFA
                   </span>
                 )}
-                <span className="text-3xl sm:text-4xl font-bold text-primary">
-                  {product.price.toFixed(0)} <span className="text-lg sm:text-xl font-normal text-foreground/80">FCFA</span>
+                <span className="text-4xl font-bold text-primary">
+                  {product.price.toFixed(0)} FCFA
                 </span>
               </div>
 
               {/* Stock */}
-              <div className="mb-4 sm:mb-6">
+              <div className="mb-6">
                 {product.stock > 0 ? (
-                  <p className="text-sm text-green-600 font-medium flex items-center gap-2">
-                    <span className="block w-2 h-2 rounded-full bg-green-600" />
-                    En stock ({product.stock} disponibles)
+                  <p className="text-sm text-green-600 font-medium">
+                    ✓ En stock ({product.stock} disponibles)
                   </p>
                 ) : (
-                  <p className="text-sm text-destructive font-medium flex items-center gap-2">
-                    <span className="block w-2 h-2 rounded-full bg-destructive" />
+                  <p className="text-sm text-destructive font-medium">
                     Rupture de stock
                   </p>
                 )}
               </div>
 
               {/* Description */}
-              <p className="text-sm sm:text-base text-muted-foreground mb-6">{product.description}</p>
+              <p className="text-muted-foreground mb-6">{product.description}</p>
             </div>
 
             {/* Quantity & Add to Cart */}
